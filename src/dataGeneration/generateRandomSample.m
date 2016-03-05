@@ -169,15 +169,15 @@ function generateRandomSample(generator, workingDir, options)
     
     % Determine the startfile index
     % This needs to be cleaned up...
-    function  imax = getStartFileIndex(dataDir)
+    function imax = getStartFileIndex(dataDir)
         folderInfo = dir(dataDir);
+        
+        imax = 0;
         
         for k=1:length(folderInfo)
             filename = folderInfo(k).name;
             
             [pathstr,name,ext] = fileparts(filename);
-            
-            imax = 0;
             
             if ext == '.mat'
                 if numel(name) > 4
