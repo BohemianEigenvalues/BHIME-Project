@@ -22,7 +22,6 @@
 %   A square matrix where the entries are sampled from the population and %
 %   determined uniquely for each value of i mod N.                        %
 %                                                                         %
-%                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
 %   it under the terms of the GNU General Public License as published by  %
