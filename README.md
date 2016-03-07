@@ -70,16 +70,16 @@ This is set to 1 by default
 Set this option to a positive integer if you would like to generate multiple files with data
 
 #### `matricesPerFile`
-This is set to 1000000/n (n is the size of matrices used) by default
+This is set to `1000000/matrixSize` by default
 
-Use this option to control how many eigenvalue condition number pairs are stored in each file.
+Use this option to control how many eigenvalue-condition number pairs are stored in each file.
 
-How to determine a good value for this:
+__How to determine a good value__:
 Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
 By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
 
 
-Example of generating eigenvalue data
+__Simple example of generating eigenvalue data__
 ```matlab
 n = 4;  % 4x4 matrices
 
@@ -92,4 +92,30 @@ g = @() randomSymmetricMatrix(population, n);
 workingDir = '~/ComplexSymmetric/';
 
 generateRandomSample(g, workingDir);
+```
+
+__Example with options of generating eigenvalue data__
+```matlab
+n = 4;  % 4x4 matrices
+
+% Entries for matrices
+population = exp(2i*pi/5*(0:4));
+
+% The generator
+g = @() randomSymmetricMatrix(population, n);
+
+workingDir = '~/ComplexSymmetric/';
+
+% Options
+filenamePrefix = 'foobar';
+startFileIndex = 1;
+numFiles = 10;
+matricesPerFile = 1e5;
+
+options = struct('filenamePrefix', filenamePrefix, ...
+                 'startFileIndex', startFileIndex, ...
+                 'numFiles', numFiles, ...
+                 'matricesPerFile', matricesPerFile);
+
+generateRandomSample(g, workingDir, options);
 ```
