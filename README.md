@@ -11,7 +11,7 @@ There are 4 main parts to the code for this project:
 ## Generating Random Matrices
 Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory. A few simple functions for generating random matrices have been provided.
 
-### `randomMatrix`
+### Random Matrices
 The `randomMatrix` function in the `matrixGenerators` directory generates random matrices of a given size with elements sampled uniformly from a given vector of possible values.
 
 __Example__
@@ -25,7 +25,7 @@ population = [-1, 0, 1];
 randomMatrix(population, n);
 ```
 
-### `randomSymmetricMatrix`
+### Random Symmetric Matrices
 The `randomSymmetricMatrix` function in the `matrixGenerators` directory generates random symmetric matrices of a given size with elements sampled uniformly from a given vector of possible values.
 
 __Example__
