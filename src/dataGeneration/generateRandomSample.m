@@ -8,7 +8,7 @@
 % matrices are sampled from a user provided function.                     %
 %   - A readme file will be automatically generated when this function    %
 %     is called                                                           %
-%   - A new directory 'Data/' in the input workingDir will be created     %
+%   - A new directory 'Data' in the input workingDir will be created      %
 %   - Files will be named BHIME_i.mat where i starts at 1 (you can        %
 %     customize the prefix by using the filenamePrefix option)            %
 %                                                                         %
@@ -77,26 +77,23 @@ function generateRandomSample(generator, workingDir, options)
         error('generator must be a function handle');
     end
     
-    % Make data directory if it doesn't exist
+    % Make Data directory if it doesn't exist
     if workingDir(end) == filesep
         dataDir = [workingDir, 'Data'];
     else
         dataDir = [workingDir, filesep, 'Data'];
     end
-    disp(dataDir);
     mkdir_if_not_exist(dataDir);
     
     % Determine matrix size
     matrixSize = max(size(generator()));
     
     % Process the options
-    opts = processOptions()
-    startFileIndex = opts.startFileIndex
-    numFiles = opts.numFiles
-    matricesPerFile = opts.matricesPerFile
-    filenamePrefix = opts.filenamePrefix
-    
-    error('Success');
+    opts = processOptions();
+    startFileIndex = opts.startFileIndex;
+    numFiles = opts.numFiles;
+    matricesPerFile = opts.matricesPerFile;
+    filenamePrefix = opts.filenamePrefix;
     
     % Write a readme file
     writeReadMe();
@@ -195,7 +192,6 @@ function generateRandomSample(generator, workingDir, options)
         for k=1:length(folderInfo)
             
             filename = folderInfo(k).name;
-            
             [~, name, ext] = fileparts(filename);
             
             if ~strcmp(ext, '.mat')
@@ -210,9 +206,7 @@ function generateRandomSample(generator, workingDir, options)
             
             i = str2double(name(fnpLen+2:end));
             
-            if i > imax
-                imax = i;
-            end
+            imax = max(imax, i);
         end
         
         % Increment by 1
@@ -236,6 +230,7 @@ function generateRandomSample(generator, workingDir, options)
     %       numFiles                                                      %
     %       matricesPerFile                                               %
     %       filenamePrefix                                                %
+    %                                                                     %
     % TO DO                                                               %
     %   - Add type checking for options                                   %
     % ------------------------------------------------------------------- %
@@ -265,45 +260,41 @@ function generateRandomSample(generator, workingDir, options)
         matricesPerFile = floor(1e6/matrixSize);
         filenamePrefix  = 'BHIME';
         
-        if nargin == 3
-            % startFileIndex
-            if isfield(options, optionNames.startFileIndex)
-                startFileIndex = options.startFileIndex;
-                
-                % Check that startFileIndex is a positive integer
-                if ~((startFileIndex>0)&(mod(startFileIndex,1)==0))
-                    error('startFileIndex option must be a positive integer');
-                end
-                
-            end
+        % numFiles
+        if isfield(options, optionNames.numFiles)
+            numFiles = options.numFiles;
             
-            % numFiles
-            if isfield(options, optionNames.numFiles)
-                numFiles = options.numFiles;
-                
-                % Check that numFiles is a positive integer
-                if ~((numFiles>0)&(mod(numFiles,1)==0))
-                    error('numFiles option must be a positive integer');
-                end
-            end
-            
-            % matricesPerFile
-            if isfield(options, optionNames.matricesPerFile)
-                matricesPerFile = options.matricesPerFile;
-                
-                % Check that matricesPerFile is a positive integer
-                if ~((matricesPerFile>0)&(mod(matricesPerFile,1)==0))
-                    error('matricesPerFile option must be a positive integer');
-                end
-            end
-            
-            % filenamePrefix
-            if isfield(options, optionNames.filenamePrefix)
-                filenamePrefix = options.filenamePrefix;
+            % Check that numFiles is a positive integer
+            if ~((numFiles>0)&(mod(numFiles,1)==0))
+                error('numFiles option must be a positive integer');
             end
         end
         
-        if startFileIndex == -1
+        % matricesPerFile
+        if isfield(options, optionNames.matricesPerFile)
+            matricesPerFile = options.matricesPerFile;
+            
+            % Check that matricesPerFile is a positive integer
+            if ~((matricesPerFile>0)&(mod(matricesPerFile,1)==0))
+                error('matricesPerFile option must be a positive integer');
+            end
+        end
+        
+        % filenamePrefix
+        if isfield(options, optionNames.filenamePrefix)
+            filenamePrefix = options.filenamePrefix;
+        end
+        
+        % startFileIndex
+        if isfield(options, optionNames.startFileIndex)
+            startFileIndex = options.startFileIndex;
+            
+            % Check that startFileIndex is a positive integer
+            if ~((startFileIndex>0)&(mod(startFileIndex,1)==0))
+                error('startFileIndex option must be a positive integer');
+            end
+            
+        else
             startFileIndex = getStartFileIndex();
         end
         
