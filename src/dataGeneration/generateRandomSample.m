@@ -79,9 +79,9 @@ function generateRandomSample(generator, workingDir, options)
     
     % Make Data directory if it doesn't exist
     if workingDir(end) == filesep
-        dataDir = [workingDir, 'Data'];
+        dataDir = [workingDir, 'Data', filesep];
     else
-        dataDir = [workingDir, filesep, 'Data'];
+        dataDir = [workingDir, filesep, 'Data', filesep];
     end
     mkdir_if_not_exist(dataDir);
     
@@ -134,6 +134,7 @@ function generateRandomSample(generator, workingDir, options)
         
         % ---------------
         % Save the data
+        generatorStr = func2str(generator);
         filename = [dataDir, filenamePrefix, '_', num2str(k), '.mat'];
         save(filename, 'eig', 'cond', 'matrixSize', 'generatorStr');
         % ---------------
