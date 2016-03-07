@@ -1,15 +1,16 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 5/2016                                                 %
+% UPDATED ... Mar. 7/2016                                                 %
 %                                                                         %
 % This function will generate .mat files containing the eigenvalues and   %
 % their respective condition numbers for a sample of matrices. The        %
 % matrices are sampled from a user provided function.                     %
 %   - A readme file will be automatically generated when this function    %
 %     is called                                                           %
-%   - A new directory 'data/' in the input workingDir will be created     %
-%   - Files will be named all_i.m where i starts at 1                     %
+%   - A new directory 'Data/' in the input workingDir will be created     %
+%   - Files will be named BHIME_i.mat where i starts at 1 (you can        %
+%     customize the prefix by using the filenamePrefix option)            %
 %                                                                         %
 % INPUT                                                                   %
 %   generator ......... A function handle that takes no input and returns %
@@ -19,6 +20,9 @@
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
+%   filenamePrefix .... Default = BHIME                                   %
+%                       The prefix for the .mat files that contain the    %
+%                       eigenvalues and their condition numbers           %
 %   startFileIndex .... Default = one more than the last file index if    %
 %                                 there are any previously generated      %
 %                                 files, 1 if there are no previously     %
@@ -61,6 +65,11 @@ function generateRandomSample(generator, workingDir, options)
     if nargin > 3
         error('generateRandomSample:TooManyInputs', ...
               'requires at most 3 input arguments');
+    elseif nargin < 2
+        error('generateRandomSample:NotEnoughInputs', ...
+              'requires at least 2 input arguments');
+    elseif nargin == 2
+        options = struct()
     end
     
     % Check that generator is a function handle
@@ -69,43 +78,28 @@ function generateRandomSample(generator, workingDir, options)
     end
     
     % Make data directory if it doesn't exist
-    if workingDir(end) == '/'
-        dataDir = [workingDir, 'Data/'];
+    if workingDir(end) == filesep
+        dataDir = [workingDir, 'Data'];
     else
-        dataDir = [workingDir, '/Data/'];
+        dataDir = [workingDir, filesep, 'Data'];
     end
+    disp(dataDir);
     mkdir_if_not_exist(dataDir);
-    
-    % Convert the function handle to a string for readme
-    generatorStr = func2str(generator);
     
     % Determine matrix size
     matrixSize = max(size(generator()));
     
-    % Option processing
-    startFileIndex = getStartFileIndex(dataDir);
-    numFiles = 1;
-    matricesPerFile = floor(1e6/matrixSize);
+    % Process the options
+    opts = processOptions()
+    startFileIndex = opts.startFileIndex
+    numFiles = opts.numFiles
+    matricesPerFile = opts.matricesPerFile
+    filenamePrefix = opts.filenamePrefix
     
-    if nargin == 3
-        % startFileIndex
-        if isfield(options,'startFileIndex')
-            startFileIndex = options.startFileIndex;
-        end
-        
-        % numFiles
-        if isfield(options,'numFiles')
-            numFiles = options.numFiles;
-        end
-        
-        % matricesPerFile
-        if isfield(options,'matricesPerFile')
-            matricesPerFile = options.matricesPerFile;
-        end
-    end
+    error('Success');
     
     % Write a readme file
-    writeReadMe(matrixSize, matricesPerFile, dataDir, generatorStr);
+    writeReadMe();
     
     % Set random seed based on the current time 
     s = RandStream('mt19937ar', 'Seed', mod(int64(now*1e6), 2^32));
@@ -143,7 +137,7 @@ function generateRandomSample(generator, workingDir, options)
         
         % ---------------
         % Save the data
-        filename = [dataDir, 'all_', num2str(k), '.mat'];
+        filename = [dataDir, filenamePrefix, '_', num2str(k), '.mat'];
         save(filename, 'eig', 'cond', 'matrixSize', 'generatorStr');
         % ---------------
         
@@ -157,43 +151,166 @@ function generateRandomSample(generator, workingDir, options)
     averageTime = toc/numFiles;
     fprintf('\nAverage loop time is %.3f seconds\n', averageTime);
     
-    % Function to write a readme file
-    function writeReadMe(matrixSize, matricesPerFile, dataDir, generatorStr)
+    
+    % =====================================================================
+    % FUNCTIONS
+    % =====================================================================
+    
+    
+    % ------------------------------------------------------------------- %
+    % writeReadMe                                                         %
+    %                                                                     %
+    % Write a readme file in the dataDir with information about when      %
+    % the data was created, what was used to create the data, etc.        %
+    % ------------------------------------------------------------------- %
+    function writeReadMe()
         file = fopen([dataDir, 'README.txt'], 'w');
         fprintf(file, ['Last Update: ',datestr(now,'mmmm dd/yyyy HH:MM:SS AM'),'\n\n']);
         fprintf(file, ['Each file contains data about the eigenvalues and condition numbers w.r.t. eigenvalues for ', num2str(matricesPerFile), ' random ', num2str(matrixSize), 'x', num2str(matrixSize)]);
-        fprintf(file, [' matrices where the random matrices are sampled from the ', generatorStr, ' function handle\n']);
-        fprintf(file, ['all_*[0-9].mat ........ All eigenvalues and corresponding condition numbers (each file contains ', num2str(matricesPerFile*matrixSize), ' lines)\n']);
+        fprintf(file, [' matrices where the random matrices are sampled from the ', func2str(generator), ' function handle\n']);
+        fprintf(file, [filenamePrefix, '_*[0-9].mat ........ All eigenvalues and corresponding condition numbers (each file contains ', num2str(matricesPerFile*matrixSize), ' lines)\n']);
         fclose(file);
     end
     
-    % Determine the startfile index
-    % This needs to be cleaned up...
-    function imax = getStartFileIndex(dataDir)
+    
+    % ------------------------------------------------------------------- %
+    % getStartFileIndex                                                   %
+    %                                                                     %
+    % Determine the index of the last file created.                       %
+    %                                                                     %
+    % OUTPUT                                                              %
+    %   Integer, one more than the last file in the data directory with   %
+    %   the filenamePrefix prefix.                                        %
+    %                                                                     %
+    % TO DO                                                               %
+    %   Clean this up...                                                  %
+    % ------------------------------------------------------------------- %
+    function imax = getStartFileIndex()
         folderInfo = dir(dataDir);
         
         imax = 0;
         
+        fnpLen = numel(filenamePrefix);
+        
         for k=1:length(folderInfo)
+            
             filename = folderInfo(k).name;
             
-            [pathstr,name,ext] = fileparts(filename);
+            [~, name, ext] = fileparts(filename);
             
-            if ext == '.mat'
-                if numel(name) > 4
-                    if name(1:4) == 'all_'
-                        i = str2num(name(5));
-                        if i > imax
-                            imax = i;
-                        end
-                    end
-                end
+            if ~strcmp(ext, '.mat')
+                continue
+            end
+            if numel(name) < fnpLen + 2
+                continue
+            end
+            if ~strcmp(name(1:fnpLen+1), [filenamePrefix, '_'])
+                continue
+            end
+            
+            i = str2double(name(fnpLen+2:end));
+            
+            if i > imax
+                imax = i;
             end
         end
         
         % Increment by 1
         imax = imax + 1;
         
+    end
+    
+    
+    % ------------------------------------------------------------------- %
+    % processOptions                                                      %
+    %                                                                     %
+    % Process the options input options struct. If an option is not in    %
+    % the options struct the default value is used.                       %
+    %                                                                     %
+    % INPUT                                                               %
+    %   options ... (struct) contains keys corresponding to the options   %
+    %                                                                     %
+    % OUTPUT                                                              %
+    %   A struct opts with keys                                           %
+    %       startFileIndex                                                %
+    %       numFiles                                                      %
+    %       matricesPerFile                                               %
+    %       filenamePrefix                                                %
+    % TO DO                                                               %
+    %   - Add type checking for options                                   %
+    % ------------------------------------------------------------------- %
+    function opts = processOptions()
+        
+        % Check that options is a struct
+        if ~isstruct(options)
+            error('processData:InvalidOptionsStruct', ...
+                  'options argument must be a structured array');
+        end
+        
+        fnames = fieldnames(options);
+        
+        optionNames = struct('startFileIndex', 'startFileIndex', ...
+                             'numFiles', 'numFiles', ...
+                             'matricesPerFile', 'matricesPerFile', ...
+                             'filenamePrefix', 'filenamePrefix');
+        
+        if ~all(ismember(fnames, fieldnames(optionNames)))
+            error('processData:InvalidOption',  ...
+                  'Invalid option provided');
+        end
+        
+        % Default values
+        startFileIndex  = -1;
+        numFiles        = 1;
+        matricesPerFile = floor(1e6/matrixSize);
+        filenamePrefix  = 'BHIME';
+        
+        if nargin == 3
+            % startFileIndex
+            if isfield(options, optionNames.startFileIndex)
+                startFileIndex = options.startFileIndex;
+                
+                % Check that startFileIndex is a positive integer
+                if ~((startFileIndex>0)&(mod(startFileIndex,1)==0))
+                    error('startFileIndex option must be a positive integer');
+                end
+                
+            end
+            
+            % numFiles
+            if isfield(options, optionNames.numFiles)
+                numFiles = options.numFiles;
+                
+                % Check that numFiles is a positive integer
+                if ~((numFiles>0)&(mod(numFiles,1)==0))
+                    error('numFiles option must be a positive integer');
+                end
+            end
+            
+            % matricesPerFile
+            if isfield(options, optionNames.matricesPerFile)
+                matricesPerFile = options.matricesPerFile;
+                
+                % Check that matricesPerFile is a positive integer
+                if ~((matricesPerFile>0)&(mod(matricesPerFile,1)==0))
+                    error('matricesPerFile option must be a positive integer');
+                end
+            end
+            
+            % filenamePrefix
+            if isfield(options, optionNames.filenamePrefix)
+                filenamePrefix = options.filenamePrefix;
+            end
+        end
+        
+        if startFileIndex == -1
+            startFileIndex = getStartFileIndex();
+        end
+        
+        opts = struct('startFileIndex', startFileIndex, ...
+                      'numFiles', numFiles, ...
+                      'matricesPerFile', matricesPerFile, ...
+                      'filenamePrefix', filenamePrefix);
     end
     
 end
