@@ -94,17 +94,17 @@ workingDir = '~/ComplexSymmetric/';
 generateRandomSample(g, workingDir);
 ```
 
-__Example with options of generating eigenvalue data__
+__Example with options__
 ```matlab
-n = 4;  % 4x4 matrices
+n = 5;  % 5x5 matrices
 
 % Entries for matrices
-population = exp(2i*pi/5*(0:4));
+population = [-1, 0, 1];
 
 % The generator
 g = @() randomSymmetricMatrix(population, n);
 
-workingDir = '~/ComplexSymmetric/';
+workingDir = '~/Real5x5/';
 
 % Options
 filenamePrefix = 'foobar';
@@ -118,4 +118,55 @@ options = struct('filenamePrefix', filenamePrefix, ...
                  'matricesPerFile', matricesPerFile);
 
 generateRandomSample(g, workingDir, options);
+```
+
+
+# Examples
+```matlab
+
+
+workingDir = '~/Real5x5/';
+
+% ------------------
+% Generate Data
+% ------------------
+
+n = 5;  % 5x5 matrices
+
+% Entries for matrices
+population = [-1, 0, 1];
+
+% The generator
+g = @() randomSymmetricMatrix(population, n);
+
+options = struct('numFiles', 10, ...
+                 'matricesPerFile', 1e5);
+
+% Generate the random sample
+generateRandomSample(g, workingDir, options);
+
+% ------------------
+% Process Data
+% ------------------
+
+height = 2001;  % Height of image in pixels
+
+margin = struct('bottom', -4, ...
+                'top', 4, ...
+                'left', -4, ...
+                'right', 4);
+
+options = struct('symmetry', true);
+
+% Color the image by the density of eigenvalues
+colorBy = 'density'
+
+pFilename = processData(height, margin, workingDir, colorBy, options);
+
+% ------------------
+% Make the image
+% ------------------
+
+% Plot image using the bone color map
+plotImage(workingDir, pFilename,  'bone');
 ```
