@@ -52,7 +52,6 @@ This function will generate a large random sample of matrices using the provided
 This function will:
 - Create a new directory `Data` in the input working directory
 - By default it will generate 1000000/n (n is the size of your matrices) matrices and store their eigenvalues and condition numbers in a `.mat` file
-- 
 
 ### Options
 There are 4 options that can be provided to the function.
@@ -70,7 +69,14 @@ This is set to 1 by default
 
 Set this option to a positive integer if you would like to generate multiple files with data
 
+#### `matricesPerFile`
+This is set to 1000000/n (n is the size of matrices used) by default
 
+Use this option to control how many eigenvalue condition number pairs are stored in each file.
+
+How to determine a good value for this:
+Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
+By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
 
 
 Example of generating eigenvalue data
