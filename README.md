@@ -9,10 +9,10 @@ There are 4 main parts to the code for this project:
 - Producing an image of the eigenvalues
 
 ## Generating Random Matrices
-Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). The `matrixGenerators` directory contains several random matrix generators that can be used, custom generators can be written (see below).
+Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory. A few simple functions for generating random matrices have been provided.
 
-### Random Matrices
-The function `randomMatrix` in the `matrixGenerators` directory can be used to generate random matrices where the elements are sampled uniformly from a given vector of possible values. The function takes two input values, a vector of values to sample from and a positive integer for the size of the matrix.
+### `randomMatrix`
+The `randomMatrix` function in the `matrixGenerators` directory generates random matrices of a given size with elements sampled uniformly from a given vector of possible values.
 
 __Example__
 ```matlab
@@ -25,17 +25,17 @@ population = [-1, 0, 1];
 randomMatrix(population, n);
 ```
 
-### Random Symmetric Matrices
-The function `randomSymmetricMatrix` in the `matrixGenerators` directory generates random symmetric matrices given the size of the matrix and a vector to sample values from.
+### `randomSymmetricMatrix`
+The `randomSymmetricMatrix` function in the `matrixGenerators` directory generates random symmetric matrices of a given size with elements sampled uniformly from a given vector of possible values.
 
 __Example__
 ```matlab
 n = 4;  % 4x4 matrix
 
 % Entries for matrix
-population = [-1, 0, 1];
+population = [-1i, 0, sqrt(2)];
 
-% Returns a random symmetric 4x4 matrix with entries sampled from [-1, 0, 1];
+% Returns a random symmetric 4x4 matrix with entries sampled from [-i, 0, sqrt(2)];
 randomSymmetricMatrix(population, n);
 ```
 
