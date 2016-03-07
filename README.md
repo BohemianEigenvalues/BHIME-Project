@@ -44,12 +44,41 @@ Writing your own random matrix generator function is simple. There is only one r
 - They must return square matrices of the same size each time you call the generator
 
 
+# Sampling Eigenvalues
+
+There is one main function for generating sample eigenvalues, the `generateRandomSample` function in the `dataGeneration` directory.
+This function will generate a large random sample of matrices using the provided generating function, compute their eigenvalues and store them in files.
+
+This function will:
+- Create a new directory `Data` in the input working directory
+- By default it will generate 1000000/n (n is the size of your matrices) matrices and store their eigenvalues and condition numbers in a `.mat` file
+- 
+
+### Options
+There are 4 options that can be provided to the function.
+
+#### `filenamePrefix`
+This option is set to `'BHIME'` by default.
+
+It is the name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer.
+
+#### `startFileIndex`
+This option is set to 1 more than the highest index of the files in the data directory
+
+#### `numFiles`
+This is set to 1 by default
+
+Set this option to a positive integer if you would like to generate multiple files with data
+
+
+
+
 Example of generating eigenvalue data
 ```matlab
 n = 4;  % 4x4 matrices
 
 % Entries for matrices
-population = exp(1i*pi/5*(0:2:8));
+population = exp(2i*pi/5*(0:4));
 
 % The generator
 g = @() randomSymmetricMatrix(population, n);
@@ -57,5 +86,4 @@ g = @() randomSymmetricMatrix(population, n);
 workingDir = '~/ComplexSymmetric/';
 
 generateRandomSample(g, workingDir);
-
 ```
