@@ -124,13 +124,13 @@ generateRandomSample(g, workingDir, options);
 # Examples
 
 ### Example 1:
-This example explores the eigenvalues of random matrices with entries sampled from {-1, 0, 1}
+This example explores the eigenvalues of random 5x5 matrices with entries sampled from {-1, 0, 1}
 ```matlab
 workingDir = '~/Real5x5/';
 
 % Generate Data ------------------
 
-% The generator (5x5 matrices with entries sampled from {-1, 0, 1}
+% The generator (5x5 matrices with entries sampled from {-1, 0, 1})
 g = @() randomSymmetricMatrix([-1, 0, 1], 5);
 
 options = struct('numFiles', 10, ...

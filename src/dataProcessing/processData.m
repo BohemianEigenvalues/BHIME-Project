@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 6/2016                                                 %
+% UPDATED ... Mar. 8/2016                                                 %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and sort the eigenvalues onto the complex %
@@ -18,13 +18,21 @@
 %     containing the data while it is running.                            %
 %                                                                         %
 % INPUT                                                                   %
-%   height ....... (int) height of grid (in pixles)                       %
-%   margin ....... (struct) {bottom, top, left, right}                    %
 %   workingDir ... (str) The directory where files should be written      %
 %   colorBy ...... Either 'density' or 'cond'                             %
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
+%   height ........... Default = 1001 (pixels)                            %
+%                      The height (in pixels) of the grid to be used, the %
+%                      width is determined from the margin such that each %
+%                      grid point is square                               %
+%   margin ........... Default = large enough to fit all the points       %
+%                      A struct with keys:                                %
+%                           bottom, top, left, right                      %
+%                      that indicated the margins for the image           %
+%                      if more than one files is used it will only fit    %
+%                      all the data in the first file                     %
 %   dataFilePrefix ... Default = BHIME                                    %
 %                      The prefix for the .mat files that contain the     %
 %                      eigenvalues and their condition numbers            %
@@ -58,18 +66,18 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function outputFilename = processData(height, margin, workingDir, colorBy, options)
+function outputFilename = processData(workingDir, colorBy, options)
     
     tic
     
     % Check the number of arguments
-    if nargin < 4
+    if nargin < 2
         error('processData:notEnoughInputArguments', ...
               'function requires at least 4 input values');
-    elseif nargin > 5
+    elseif nargin > 3
         error('processData:tooManyInputArguments', ...
         'function requires at most 5 input values');
-    elseif nargin == 4
+    elseif nargin == 2
         options = struct();
     end
     
@@ -85,10 +93,12 @@ function outputFilename = processData(height, margin, workingDir, colorBy, optio
     
     % Process the options
     opts = processOptions();
+    margin = opts.margin;
     dataFilePrefix = opts.dataFilePrefix;
     outputFileType = opts.outputFileType;
     symmetry = opts.symmetry;
     numFiles = opts.numFiles;
+    height = opts.height;
     
     % Get resolution
     resolution = getResolution();
@@ -385,7 +395,9 @@ function outputFilename = processData(height, margin, workingDir, colorBy, optio
         
         fnames = fieldnames(options);
         
-        optionNames = struct('dataFilePrefix', 'dataFilePrefix', ...
+        optionNames = struct('height', 'height', ...
+                             'margin', 'margin', ...
+                             'dataFilePrefix', 'dataFilePrefix', ...
                              'outputFileType', 'outputFileType', ...
                              'symmetry', 'symmetry', ...
                              'numFiles', 'numFiles');
@@ -396,12 +408,19 @@ function outputFilename = processData(height, margin, workingDir, colorBy, optio
         end
         
         % Default values
+        height = 1001;
         dataFilePrefix = 'BHIME';
         outputFileType = 'mat';
         symmetry = false;
         numFiles = getNumFiles();
         
-        % dataFilenamePredix
+        
+        % height
+        if isfield(options, 'dataFilePrefix')
+            height = options.height;
+        end
+        
+        % dataFilenamePrefix
         if isfield(options, 'dataFilePrefix')
             dataFilePrefix = options.dataFilePredix;
         end
@@ -421,10 +440,49 @@ function outputFilename = processData(height, margin, workingDir, colorBy, optio
             numFiles = options.numFiles;
         end
         
-        opts = struct('dataFilePrefix', dataFilePrefix, ...
+        % margin
+        if isfield(options, 'dataFilePrefix')
+            margin = options.margin;
+        else
+            margin = getDefaultMargin();
+        end
+        
+        opts = struct('height', height, ...
+                      'margin', margin, ...
+                      'dataFilePrefix', dataFilePrefix, ...
                       'outputFileType', outputFileType, ...
                       'symmetry', symmetry, ...
                       'numFiles', numFiles);
+        
+    end
+    
+    
+    % ------------------------------------------------------------------- %
+    % getDefaultMargin                                                    %
+    %                                                                     %
+    % Determine the default margin such that all data in first file fits  %
+    % in margin                                                           %
+    %                                                                     %
+    % OUTPUT                                                              %
+    %   Margin struct                                                     %
+    % ------------------------------------------------------------------- %
+    function m = getDefaultMargin()
+        
+        % Read the first file
+        dataFilename = [workingDir, 'Data', filesep, dataFilePrefix, '_1.mat'];
+        data = parLoad(dataFilename);
+        
+        eigVals = data.eig;
+        
+        bottom = min(imag(eigVals(:)));
+        top    = max(imag(eigVals(:)));
+        left   = min(real(eigVals(:)));
+        right  = max(real(eigVals(:)));
+        
+        m = struct('bottom', bottom, ...
+                   'top', top, ...
+                   'left', left, ...
+                   'right', right);
         
     end
     
@@ -611,7 +669,7 @@ function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFi
     data = parLoad(dataFilename);
 
     for i = 1:numel(data.eig)
-
+        
         xVal = real(data.eig(i));
         yVal = imag(data.eig(i));
         
