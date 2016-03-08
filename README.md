@@ -124,7 +124,7 @@ generateRandomSample(g, workingDir, options);
 # Examples
 
 ### Example 1:
-This example explores the eigenvalues of random 5x5 matrices with entries sampled from {-1, 0, 1}
+This simple example explores the eigenvalues of random 5x5 matrices with entries sampled from {-1, 0, 1}
 ```matlab
 workingDir = '~/Real5x5/';
 
@@ -133,30 +133,21 @@ workingDir = '~/Real5x5/';
 % The generator (5x5 matrices with entries sampled from {-1, 0, 1})
 g = @() randomSymmetricMatrix([-1, 0, 1], 5);
 
-options = struct('numFiles', 10, ...
-                 'matricesPerFile', 1e5);
-
 % Generate the random sample
-generateRandomSample(g, workingDir, options);
-
-% Process Data ------------------
-
-height = 2001;  % Height of image in pixels
-
-margin = struct('bottom', -4, ...
-                'top', 4, ...
-                'left', -4, ...
-                'right', 4);
-
-options = struct('symmetry', true);
+generateRandomSample(g, workingDir);
 
 % Color the image by the density of eigenvalues
 colorBy = 'density'
 
-pFilename = processData(height, margin, workingDir, colorBy, options);
+pFilename = processData(workingDir, colorBy);
 
 % Make the image ------------------
 
-% Plot image using the bone color map
-plotImage(workingDir, pFilename,  'bone');
+T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
+     0, 0,   255,  255,  255,  0,    0,   255,  255;
+     0, 255, 255,  0,    0,    0,    0,   255,  255];
+x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
+
+% Plot image ------------------
+plotImage(workingDir, pFilename,  T, x);
 ```
