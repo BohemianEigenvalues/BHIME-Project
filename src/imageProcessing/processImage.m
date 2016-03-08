@@ -81,6 +81,8 @@ function processImage(workingDir, processedDataFilename, T, x)
     % Interpolate data
     mesh = log(double(mesh));
     
+    x = autoColormapWeights() 
+    
     map = interp1(x', T'/255, linspace(0, 1, 255));
     % -----------------
     
@@ -109,6 +111,42 @@ function processImage(workingDir, processedDataFilename, T, x)
             k = k + 1;
         end
         outputFilename = [outPrefix, num2str(k), '.png'];
+        
+    end
+    
+    
+    % ------------------------------------------------------------------- %
+    % autoColormapWeights                                                 %
+    %                                                                     %
+    % Determine the weights for the color map based on the distribution   %
+    % of the data                                                         %
+    %                                                                     %
+    % OUTPUT                                                              %
+    %   A vector of weights (from 0 to 1)                                 %
+    % ------------------------------------------------------------------- %
+    function X = autoColormapWeights()
+        
+        numColors = size(T,2);
+        
+        lmesh = mesh;
+        
+        lmesh(lmesh == -Inf) = 0;   % Replace -Inf with 0
+        lmesh(lmesh == Inf) = 0;    % Replace Inf with 0
+        lmesh(real(lmesh) == Inf) = 0;
+        lmesh(imag(lmesh) == Inf) = 0;
+        lmesh(lmesh == NaN) = 0;    % Replace NaN with 0
+        L = lmesh(lmesh~=0);        % Remove zeros
+        
+        lmesh = log(double(lmesh));
+        
+        X = zeros(1, numColors);
+        X(end) = max(L);
+        
+        for i=2:numColors-1
+            X(i) = quantile(L, (i-1)/(numColors-1));
+        end
+        
+        X = X/X(end);   % Normalize
         
     end
     
