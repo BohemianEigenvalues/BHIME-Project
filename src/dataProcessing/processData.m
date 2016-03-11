@@ -51,6 +51,7 @@
 % TO DO                                                                   %
 %   - Separate symmetry into symmetry across real axis and symmetry       %
 %     across imaginary axis                                               %
+%   - Add option to ignore real axis
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -368,7 +369,7 @@ function outputFilename = processData(workingDir, colorBy, options)
     
     
     % ------------------------------------------------------------------- %
-    % processOption                                                       %
+    % processOptions                                                      %
     %                                                                     %
     % Process the options input options struct. If an option is not in    %
     % the options struct the default value is used.                       %
@@ -378,7 +379,9 @@ function outputFilename = processData(workingDir, colorBy, options)
     %                                                                     %
     % OUTPUT                                                              %
     %   A struct opts with keys                                           %
-    %       dataFilePredix                                                %
+    %       height                                                        %
+    %       width                                                         %
+    %       dataFilePrefix                                                %
     %       outputFileType                                                %
     %       symmetry                                                      %
     %       numFiles                                                      %
@@ -412,17 +415,16 @@ function outputFilename = processData(workingDir, colorBy, options)
         dataFilePrefix = 'BHIME';
         outputFileType = 'mat';
         symmetry = false;
-        numFiles = getNumFiles();
         
         
         % height
-        if isfield(options, 'dataFilePrefix')
+        if isfield(options, 'height')
             height = options.height;
         end
         
         % dataFilenamePrefix
         if isfield(options, 'dataFilePrefix')
-            dataFilePrefix = options.dataFilePredix;
+            dataFilePrefix = options.dataFilePrefix;
         end
         
         % outputFileType
@@ -435,13 +437,15 @@ function outputFilename = processData(workingDir, colorBy, options)
             symmetry = options.symmetry;
         end
         
+        
+        numFiles = getNumFiles();
         % numFiles
         if isfield(options, 'numFiles')
             numFiles = options.numFiles;
         end
         
         % margin
-        if isfield(options, 'dataFilePrefix')
+        if isfield(options, 'margin')
             margin = options.margin;
         else
             margin = getDefaultMargin();
@@ -504,6 +508,8 @@ function outputFilename = processData(workingDir, colorBy, options)
         else
             dataDir = [workingDir, filesep, 'Data', filesep];
         end
+        
+        disp(dataDir);
         
         folderInfo = dir(dataDir);
         
@@ -716,7 +722,6 @@ function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
 
         xVal = real(data.eig(i));
         yVal = imag(data.eig(i));
-
         
         if xVal > margin.left && xVal <= margin.right && yVal > margin.bottom && yVal <= margin.top
 
