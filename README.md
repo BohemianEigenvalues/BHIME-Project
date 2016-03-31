@@ -189,3 +189,6 @@ x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 % Plot image ---------------------
 plotImage(workingDir, pFilename,  T, x);
 ```
+
+This produces the image:
+![5x5 Integer Matrices](https://s3.amazonaws.com/stevenethornton.github/Image-1.png)

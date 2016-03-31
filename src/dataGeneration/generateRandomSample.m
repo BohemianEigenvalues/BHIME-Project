@@ -69,7 +69,7 @@ function generateRandomSample(generator, workingDir, options)
         error('generateRandomSample:NotEnoughInputs', ...
               'requires at least 2 input arguments');
     elseif nargin == 2
-        options = struct()
+        options = struct();
     end
     
     % Check that generator is a function handle
