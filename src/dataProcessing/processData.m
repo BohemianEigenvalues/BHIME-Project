@@ -46,6 +46,7 @@
 %                      The number of files to process                     %
 %   map .............. Default = z -> z (no mapping)                      %
 %                      Map the eigenvalues by a given function handel     %
+%                      The function MUST be vectorized                    %
 %                                                                         %
 % OUTPUT                                                                  %
 %   A string of the name of file that data is written to                  %
@@ -679,7 +680,6 @@ end
 
 % -------------------------------------------------------------------------
 % process_density_no_symmetry_tmp
-%
 % -------------------------------------------------------------------------
 function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
 
@@ -693,16 +693,17 @@ function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFi
     % Number of points outside view
     outsideCount = uint64(0);
 
-    % Load the files
-    data = parLoad(dataFilename);
-
-    for i = 1:numel(data.eig)
+    % Load the eigenvalues
+    eigVals = parLoad(dataFilename);
+    eigVals = eigVals.eig;
+    
+    % Map the eigenvalues
+    eigVals = map(eigVals);
+    
+    for i = 1:numel(eigVals)
         
         % Get the ith eigenvalue
-        z = data.eig(i);
-        
-        % Map the value
-        z = map(z);
+        z = eigVals(i);
         
         % Get the real and imaginary parts
         xVal = real(z);
@@ -721,7 +722,7 @@ function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFi
     end
 
     % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
+    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
 
     % Write mesh to a temporary .mat file
     parSave(tmpFilename, 1, mesh);
@@ -742,16 +743,17 @@ function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
     % Number of points outside view
     outsideCount = uint64(0);
 
-    % Load the files
-    data = parLoad(dataFilename);
+    % Load the eigenvalues
+    eigVals = parLoad(dataFilename);
+    eigVals = eigVals.eig;
+    
+    % Map the eigenvalues
+    eigVals = map(eigVals);
 
-    for i = 1:numel(data.eig)
+    for i = 1:numel(eigVals)
 
         % Get the ith eigenvalue
-        z = data.eig(i);
-        
-        % Map the value
-        z = map(z);
+        z = eigVals(i);
         
         % Get the real and imaginary parts
         xVal = real(z);
@@ -802,7 +804,7 @@ function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
     end
 
     % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
+    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
 
     % Write mesh to a temporary .mat file
     parSave(tmpFilename, 1, mesh);
@@ -828,26 +830,32 @@ function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
     % Load the files
     data = parLoad(dataFilename);
     
+    % Get the eigenvalues
+    eigVals = data.eig;
+    
+    % Map the eigenvalues
+    eigVals = map(eigVals);
+    
+    % Get the eigenvalue condition numbers
+    condVals = data.cond;
+    
     % Check that the number of values in the real and imaginary files
     % are the same
-    if numel(data.eig) ~= numel(data.cond)
+    if numel(eigVals) ~= numel(condVals)
         error 'Error, eigenvalues and condition number values do not match';
     end
     
-    for i = 1:numel(data.eig)
+    for i = 1:numel(eigVals)
         
         % Get the ith eigenvalue
-        z = data.eig(i);
-        
-        % Map the value
-        z = map(z);
+        z = eigVals(i);
         
         % Get the real and imaginary parts
         xVal = real(z);
         yVal = imag(z);
         
         % Get the condition number
-        cVal = data.cond(i);
+        cVal = condVals(i);
         
         if isInMargins(xVal, yVal, margin)
             
@@ -862,7 +870,7 @@ function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
     end
     
     % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
+    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
     
     % Write mesh to a temporary .mat file
     parSave(tmpFilename_count, 1, count);
@@ -887,27 +895,33 @@ function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename
 
     % Load the files
     data = parLoad(dataFilename);
+    
+    % Get the eigenvalues
+    eigVals = data.eig;
+    
+    % Map the eigenvalues
+    eigVals = map(eigVals);
+    
+    % Get the eigenvalue condition numbers
+    condVals = data.cond;
 
     % Check that the number of values in the real and imaginary files
     % are the same
-    if numel(data.eig) ~= numel(data.cond)
+    if numel(eigVals) ~= numel(condVals)
         error 'Error, eigenvalues and condition number values do not match';
     end
 
-    for i = 1:numel(data.eig)
+    for i = 1:numel(eigVals)
 
         % Get the ith eigenvalue
-        z = data.eig(i);
-        
-        % Map the value
-        z = map(z);
+        z = eigVals(i);
         
         % Get the real and imaginary parts
         xVal = real(z);
         yVal = imag(z);
         
         % Get the condition number
-        cVal = data.cond(i);
+        cVal = condVals(i);
         
         % 1 =====
         if isInMargins(xVal, yVal, margin)
@@ -961,7 +975,7 @@ function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename
     end
     
     % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
+    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
 
     % Write mesh to a temporary .mat file
     parSave(tmpFilename_count, 1, count);

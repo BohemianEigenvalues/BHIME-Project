@@ -1,15 +1,18 @@
-# BHIME-Project
+# BHIME Project
 
-BHIME (pronounced Bohemian) is an acronym for Bounded Height Integer Matrix Eigenvalues. This project originated in exploring and visualizing the distributions of bounded height integer matrices. Since then, the project has evolved to include matrices that are not necessarily integer matrices. The name has stuck and we typically call the eigenvalues in these images Bohemian Eigenvalues.
+BHIME (pronounced Bohemian) is an acronym for Bounded Height Integer Matrix Eigenvalues. 
+This project originated in exploring and visualizing the distributions of the eigenvalues of bounded height integer matrices. 
+The project has since evolved to include matrices that are not necessarily integer matrices. 
+The name has stuck and we typically call the eigenvalues in these images Bohemian Eigenvalues.
 
-There are 4 main parts to the code for this project:
-- Generating random matrices
-- Sampling eigenvalues from classes of random matrices
+The code is separated into 4 main components:
+- [Generating random matrices](https://github.com/steventhornton/BHIME-Project#generating-random-matrices)
+- [Sampling eigenvalues from classes of random matrices](https://github.com/steventhornton/BHIME-Project#sampling-eigenvalues)
 - Processing the eigenvalues into a grid in the complex plane
 - Producing an image of the eigenvalues
 
 ## Generating Random Matrices
-Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory. A few simple functions for generating random matrices have been provided.
+Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory.
 
 ### Random Matrices
 The `randomMatrix` function in the `matrixGenerators` directory generates random matrices of a given size with elements sampled uniformly from a given vector of possible values.
@@ -47,7 +50,7 @@ Writing your own random matrix generator function is simple. There is only one r
 # Sampling Eigenvalues
 
 There is one main function for generating sample eigenvalues, the `generateRandomSample` function in the `dataGeneration` directory.
-This function will generate a large random sample of matrices using the provided generating function, compute their eigenvalues and store them in files.
+This function will generate a large random sample of matrices using the provided generating function, compute their eigenvalues and store them in `.mat` files.
 
 This function will:
 - Create a new directory `Data` in the input working directory
@@ -56,20 +59,20 @@ This function will:
 ### Options
 There are 4 options that can be provided to the function.
 
-#### `filenamePrefix`
+##### `filenamePrefix`
 This option is set to `'BHIME'` by default.
 
 It is the name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer.
 
-#### `startFileIndex`
-This option is set to 1 more than the highest index of the files in the data directory
+##### `startFileIndex`
+This option is set to 1 more than the highest index of the files in the data directory by default. Only use this if you have already computed data and would like to compute more.
 
-#### `numFiles`
+##### `numFiles`
 This is set to 1 by default
 
-Set this option to a positive integer if you would like to generate multiple files with data
+Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues of `matricesPerFile` random matrices.
 
-#### `matricesPerFile`
+##### `matricesPerFile`
 This is set to `1000000/matrixSize` by default
 
 Use this option to control how many eigenvalue-condition number pairs are stored in each file.
@@ -107,21 +110,19 @@ g = @() randomSymmetricMatrix(population, n);
 workingDir = '~/Real5x5/';
 
 % Options
-filenamePrefix = 'foobar';
-startFileIndex = 1;
-numFiles = 10;
-matricesPerFile = 1e5;
-
-options = struct('filenamePrefix', filenamePrefix, ...
-                 'startFileIndex', startFileIndex, ...
-                 'numFiles', numFiles, ...
-                 'matricesPerFile', matricesPerFile);
+options = struct('filenamePrefix', 'foobar', ...
+                 'startFileIndex', 1, ...
+                 'numFiles', 10, ...
+                 'matricesPerFile', 1e5);
 
 generateRandomSample(g, workingDir, options);
 ```
 
+# Processing the Eigenvalues
 
-# Examples
+# Making an Image
+
+# Complete Examples
 
 ### Example 1:
 This simple example explores the eigenvalues of random 5x5 matrices with entries sampled from {-1, 0, 1}
@@ -136,6 +137,8 @@ g = @() randomMatrix([-1, 0, 1], 5);
 % Generate the random sample
 generateRandomSample(g, workingDir);
 
+% Process Data -------------------
+
 % Color the image by the density of eigenvalues
 colorBy = 'density'
 
@@ -148,6 +151,6 @@ T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
      0, 255, 255,  0,    0,    0,    0,   255,  255];
 x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 
-% Plot image ------------------
+% Plot image ---------------------
 plotImage(workingDir, pFilename,  T, x);
 ```
