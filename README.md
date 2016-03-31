@@ -8,10 +8,10 @@ The name has stuck and we typically call the eigenvalues in these images Bohemia
 The code is separated into 4 main components:
 - [Generating random matrices](https://github.com/steventhornton/BHIME-Project#generating-random-matrices)
 - [Sampling eigenvalues from classes of random matrices](https://github.com/steventhornton/BHIME-Project#sampling-eigenvalues)
-- Processing the eigenvalues into a grid in the complex plane
-- Producing an image of the eigenvalues
+- [Processing the eigenvalues into a grid in the complex plane](https://github.com/steventhornton/BHIME-Project#processing-the-eigenvalues)
+- [Producing an image of the eigenvalues](https://github.com/steventhornton/BHIME-Project#making-an-image)
 
-## Generating Random Matrices
+# Generating Random Matrices
 Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory.
 
 ### Random Matrices
@@ -70,6 +70,7 @@ __How to determine a good value for `matricesPerFile`__:
 Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
 By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
 
+### Examples
 
 __Simple example of generating eigenvalue data__
 ```matlab
@@ -108,6 +109,18 @@ generateRandomSample(g, workingDir, options);
 ```
 
 # Processing the Eigenvalues
+
+## Options
+
+| Option Name | Default | Details |
+| ----------- | ------- | ------- |
+| `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
+| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`<\li><li>`top`<\li><li>`left`<\li><li>`right`<\li><\ul> that indicate the margins for the image. |
+| `dataFilePrefix` | `BHIME` | The prefix for the .mat files that contain the eigenvalues and their condition numbers |
+| `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
+| `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
+| `numFiles` | All files in the `Data` directory | The number of data files to process |
+| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized__ |
 
 # Making an Image
 
