@@ -191,4 +191,6 @@ plotImage(workingDir, pFilename,  T, x);
 ```
 
 This produces the image:
+<img src="https://s3.amazonaws.com/stevenethornton.github/Image-1.png" alt="5x5 Integer Matrice" style="width: 200px;"/>
+
 ![5x5 Integer Matrices](https://s3.amazonaws.com/stevenethornton.github/Image-1.png)
