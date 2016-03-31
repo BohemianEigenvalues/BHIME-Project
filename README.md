@@ -59,6 +59,11 @@ This function will:
 ### Options
 There are 4 options that can be provided to the function.
 
+| Option Name | Default | Details |
+| ----------- | ------- | ------- |
+| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. THe names of the data files take the form: `filenamPrefix + '_' + i` where `i` is a positive integer. |
+| `startFileIndex` | 1 more than the highest index of the files in the data  directory, 1 if no files have been written | Only use this if you have already computed data and would like to compute more |
+
 ##### `filenamePrefix`
 This option is set to `'BHIME'` by default.
 
