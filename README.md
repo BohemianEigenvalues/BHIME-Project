@@ -191,6 +191,48 @@ plotImage(workingDir, pFilename,  T, x);
 ```
 
 This produces the image:
-<img src="https://s3.amazonaws.com/stevenethornton.github/Image-1.png" alt="5x5 Integer Matrice" style="width: 200px;"/>
-
 ![5x5 Integer Matrices](https://s3.amazonaws.com/stevenethornton.github/Image-1.png)
+
+### Example 2
+```matlab
+n = 4;  % 4x4 matrices
+
+% Entries for matrices
+population = exp(2i*pi/5*(0:4));
+
+% The generator
+g = @() randomSymmetricMatrix(population, n);
+
+workingDir = '~/ComplexSymmetric/';
+
+% Set the options
+opts = struct('numFiles', 10, ...
+              'matricesPerFile', 1e6);
+
+% Generate the data (may take a few minutes)
+generateRandomSample(g, workingDir, opts);
+
+% Options for processing the data
+margin = struct('bottom', -4, ...
+                'top', 4, ...
+                'left', -4, ...
+                'right', 4);
+
+opts = struct('height', 501, ...
+              'margin', margin);
+
+% Process the data
+colorBy = 'density';
+fname = processData(workingDir, colorBy, opts);
+
+T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
+      0, 0,   255,  255,  255,  0,    0,   255,  255;
+      0, 255, 255,  0,    0,    0,    0,   255,  255]'./255;
+x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
+
+% Make an image
+processImage(workingDir, fname, T, x);
+```
+
+produces the image:
+![4x4 Symmetric Complex Matrices](https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png)
