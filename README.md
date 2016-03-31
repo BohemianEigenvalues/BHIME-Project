@@ -2,7 +2,7 @@
 
 BHIME (pronounced Bohemian) is an acronym for Bounded Height Integer Matrix Eigenvalues. 
 This project originated in exploring and visualizing the distributions of the eigenvalues of bounded height integer matrices. 
-The project has since evolved to include matrices that are not necessarily integer matrices. 
+The project has since evolved to include many other classes of matrices.
 The name has stuck and we typically call the eigenvalues in these images Bohemian Eigenvalues.
 
 The code is separated into 4 main components:
