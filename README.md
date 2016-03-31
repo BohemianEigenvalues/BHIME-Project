@@ -120,7 +120,40 @@ generateRandomSample(g, workingDir, options);
 | `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
 | `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
 | `numFiles` | All files in the `Data` directory | The number of data files to process |
-| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized__ |
+| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
+
+## Examples
+
+#### Simple example
+```matlab
+workingDir = '~/ComplexSymmetric/';
+
+% Process by density
+fname = processData(workingDir, 'density');
+
+% fname will be the name of the file containing the data
+```
+
+#### Example with options
+```matlab
+workingDir = '~/Real5x5/';
+
+margin = struct('bottom', -4, ...
+                'top',     4, ...
+                'left',   -4, ...
+                'right',   4);
+
+opts = struct('height', 2001, ...
+              'margin', margin, ...
+              'dataFilePrefix', 'foobar', ...
+              'outputFileType', 'txt', ...
+              'symmetry', true, ...
+              'numFiles', 5, ...
+              'map', @(z) 1./z);
+
+% Process by condition number 
+fname = processData(workingDir, 'cond', opts);
+```
 
 # Making an Image
 
