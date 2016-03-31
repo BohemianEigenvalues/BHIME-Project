@@ -233,7 +233,6 @@ x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 % Make an image
 processImage(workingDir, fname, T, x);
 ```
-
 produces the image:
 
 ![4x4 Symmetric Complex Matrices](https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png)
