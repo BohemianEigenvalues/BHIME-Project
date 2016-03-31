@@ -3,7 +3,7 @@
 BHIME (pronounced Bohemian) is an acronym for Bounded Height Integer Matrix Eigenvalues. 
 This project originated in exploring and visualizing the distributions of the eigenvalues of bounded height integer matrices. 
 The project has since evolved to include many other classes of matrices.
-The name has stuck and we typically call the eigenvalues in these images Bohemian Eigenvalues.
+The name has stuck and we typically call the eigenvalues in these images *Bohemian Eigenvalues*.
 
 The code is separated into 4 main components:
 - [Generating random matrices](https://github.com/steventhornton/BHIME-Project#generating-random-matrices)
@@ -235,4 +235,4 @@ processImage(workingDir, fname, T, x);
 ```
 produces the image:
 
-![4x4 Symmetric Complex Matrices](https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png)
+--> ![4x4 Symmetric Complex Matrices](https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png) <--
