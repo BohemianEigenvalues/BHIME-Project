@@ -115,7 +115,7 @@ generateRandomSample(g, workingDir, options);
 | Option Name | Default | Details |
 | ----------- | ------- | ------- |
 | `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
-| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`<\li><li>`top`<\li><li>`left`<\li><li>`right`<\li><\ul> that indicate the margins for the image. |
+| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
 | `dataFilePrefix` | `BHIME` | The prefix for the .mat files that contain the eigenvalues and their condition numbers |
 | `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
 | `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
