@@ -167,10 +167,19 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
     % ------------------------------------------------------------------- %
     function writeReadMe()
         file = fopen([dataDir, 'README.txt'], 'w');
-        fprintf(file, ['Last Update: ',datestr(now,'mmmm dd/yyyy HH:MM:SS AM'),'\n\n']);
-        fprintf(file, ['Each file contains data about the eigenvalues and condition numbers w.r.t. eigenvalues for ', num2str(matricesPerFile), ' ', num2str(matrixSize), 'x', num2str(matrixSize)]);
-        fprintf(file, [' matrices where the matrices are generated from the ', func2str(generator), ' function handle\n']);
-        fprintf(file, [filenamePrefix, '_*[0-9].mat ........ All eigenvalues and corresponding condition numbers (each file contains ', num2str(matricesPerFile*matrixSize), ' lines)\n']);
+        t = datestr(now, 'mmmm dd/yyyy HH:MM:SS AM');
+        fprintf(file, ['Last Update: ', t, '\n\n']);
+        fprintf(file, 'Each file contains data about the (right) ');
+        fprintf(file, 'eignenvalues and condition numbers w.r.t. the ');
+        fprintf(file, 'eigenvalues for ');
+        fprintf(file, [num2str(matricesPerFile), ' ']);
+        fprintf(file, [num2str(matrixSize), 'x', num2str(matrixSize)]);
+        fprintf(file, ' matrices where the matrices are generated from ');
+        fprintf(file, ['the ' func2str(generator), ' function handle\n']);
+        fprintf(file, [filenamePrefix, '_*[0-9].mat ... All eigenvalues']);
+        fprintf(file, ' and corresponding condition numbers (each file ');
+        fprintf(file, ['contains ' num2str(matricesPerFile*matrixSize)]);
+        fprintf(file, [' lines\n']);
         fclose(file);
     end
 

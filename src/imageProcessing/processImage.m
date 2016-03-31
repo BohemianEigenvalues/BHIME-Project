@@ -89,7 +89,7 @@ function processImage(workingDir, processedDataFilename, cmap, x, options)
     
     % ------------------------
     
-    x = autoColormapWeights();
+    %x = autoColormapWeights();
     
     % Interpolate data
     mesh = log(double(mesh));

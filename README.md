@@ -131,7 +131,7 @@ workingDir = '~/Real5x5/';
 % Generate Data ------------------
 
 % The generator (5x5 matrices with entries sampled from {-1, 0, 1})
-g = @() randomSymmetricMatrix([-1, 0, 1], 5);
+g = @() randomMatrix([-1, 0, 1], 5);
 
 % Generate the random sample
 generateRandomSample(g, workingDir);

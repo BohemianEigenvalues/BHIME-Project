@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 8/2016                                                 %
+% UPDATED ... Mar. 13/2016                                                %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and sort the eigenvalues onto the complex %
@@ -44,6 +44,8 @@
 %                      the number of points                               %
 %   numFiles ......... Default = All files                                %
 %                      The number of files to process                     %
+%   map .............. Default = z -> z (no mapping)                      %
+%                      Map the eigenvalues by a given function handel     %
 %                                                                         %
 % OUTPUT                                                                  %
 %   A string of the name of file that data is written to                  %
@@ -51,7 +53,10 @@
 % TO DO                                                                   %
 %   - Separate symmetry into symmetry across real axis and symmetry       %
 %     across imaginary axis                                               %
-%   - Add option to ignore real axis
+%   - Add option to ignore real axis                                      %
+%   - Add option to map eigenvalues to a function (i.e. x -> 1/x)         %
+%   - Can the symmetry and non-symmetric function be combined to make the %
+%     program more compact?                                               %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -90,16 +95,22 @@ function outputFilename = processData(workingDir, colorBy, options)
         processDataDir = [workingDir, filesep, 'ProcessedData', filesep];
         dataDir = [workingDir, filesep, 'Data', filesep];
     end
-    mkdir_if_not_exist(processDataDir)
+    mkdir_if_not_exist(processDataDir);
     
     % Process the options
     opts = processOptions();
-    margin = opts.margin;
+    margin         = opts.margin;
     dataFilePrefix = opts.dataFilePrefix;
     outputFileType = opts.outputFileType;
-    symmetry = opts.symmetry;
-    numFiles = opts.numFiles;
-    height = opts.height;
+    symmetry       = opts.symmetry;
+    numFiles       = opts.numFiles;
+    height         = opts.height;
+    map            = opts.map;
+    
+    % Check that map is a function handle
+    if ~isa(map, 'function_handle')
+        error('map must be a function handle');
+    end
     
     % Get resolution
     resolution = getResolution();
@@ -138,7 +149,7 @@ function outputFilename = processData(workingDir, colorBy, options)
     % =====================================================================
     
     
-    % ----------------------------------------------------------------------
+    % ---------------------------------------------------------------------
     function mesh = process_density()
         if symmetry
             mesh = process_density_symmetry();
@@ -147,7 +158,7 @@ function outputFilename = processData(workingDir, colorBy, options)
         end
     end
         
-    % ----------------------------------------------------------------------
+    % ---------------------------------------------------------------------
     
     function mesh = process_cond()
         if symmetry
@@ -157,7 +168,7 @@ function outputFilename = processData(workingDir, colorBy, options)
         end
     end
     
-    % ------------------------------------------------------------------
+    % ---------------------------------------------------------------------
     function mesh = process_density_no_symmetry()
     
         % Process all the data
@@ -172,7 +183,7 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename);
+            process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map);
     
             toc
     
@@ -197,7 +208,7 @@ function outputFilename = processData(workingDir, colorBy, options)
     end
 
     
-    % ----------------------------------------------------------------------
+    % ---------------------------------------------------------------------
     function mesh = process_density_symmetry()
     
         % Process all the data
@@ -212,7 +223,7 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename)
+            process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
     
             toc
     
@@ -237,8 +248,8 @@ function outputFilename = processData(workingDir, colorBy, options)
     end
     
     
-    % ======================================================================
-    % ======================================================================
+    % =====================================================================
+    % =====================================================================
     
     function mesh = process_cond_no_symmetry()
     
@@ -255,7 +266,7 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat']
     
             % Call function to save the processed data to a temporary file
-            process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total);
+            process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
     
             toc
     
@@ -299,9 +310,9 @@ function outputFilename = processData(workingDir, colorBy, options)
     
     end
     
-    % ----------------------------------------------------------------------
+    % ---------------------------------------------------------------------
     
-    % ----------------------------------------------------------------------
+    % ---------------------------------------------------------------------
     function mesh = process_cond_symmetry()
     
         % Process all the data
@@ -317,7 +328,7 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total);
+            process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
     
             toc
     
@@ -361,10 +372,10 @@ function outputFilename = processData(workingDir, colorBy, options)
     
     end
     
-    % ----------------------------------------------------------------------    
+    % ---------------------------------------------------------------------   
     
     % =====================================================================
-    % MORE FUNCTION
+    % MORE FUNCTIONS
     % =====================================================================
     
     
@@ -403,7 +414,8 @@ function outputFilename = processData(workingDir, colorBy, options)
                              'dataFilePrefix', 'dataFilePrefix', ...
                              'outputFileType', 'outputFileType', ...
                              'symmetry', 'symmetry', ...
-                             'numFiles', 'numFiles');
+                             'numFiles', 'numFiles', ...
+                             'map', 'map');
         
         if ~all(ismember(fnames, fieldnames(optionNames)))
             error('processData:InvalidOption',  ...
@@ -415,6 +427,7 @@ function outputFilename = processData(workingDir, colorBy, options)
         dataFilePrefix = 'BHIME';
         outputFileType = 'mat';
         symmetry = false;
+        map = @(z) z;
         
         
         % height
@@ -437,6 +450,12 @@ function outputFilename = processData(workingDir, colorBy, options)
             symmetry = options.symmetry;
         end
         
+        % map
+        if isfield(options, 'map')
+            map = options.map;
+        end
+        
+        % ------------------
         
         numFiles = getNumFiles();
         % numFiles
@@ -456,7 +475,8 @@ function outputFilename = processData(workingDir, colorBy, options)
                       'dataFilePrefix', dataFilePrefix, ...
                       'outputFileType', outputFileType, ...
                       'symmetry', symmetry, ...
-                      'numFiles', numFiles);
+                      'numFiles', numFiles, ...
+                      'map', map);
         
     end
     
@@ -552,10 +572,10 @@ function outputFilename = processData(workingDir, colorBy, options)
         
         % Check the margins and make the resolution structure
         if margin.bottom >= margin.top
-            error 'Bottom margin must be less than top margin'
+            error 'Bottom margin must be less than top margin';
         end
         if margin.left >= margin.right
-            error 'Left margin must be less than top margin'
+            error 'Left margin must be less than top margin';
         end
         
         width = getWidth();
@@ -657,9 +677,60 @@ end
 
 
 
+% -------------------------------------------------------------------------
+% process_density_no_symmetry_tmp
+%
+% -------------------------------------------------------------------------
+function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
 
-% ------------------------------------------------------------------
-function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename)
+    % Sizes of the points
+    pointWidth = (margin.right - margin.left)/resolution.width;
+    pointHeight = (margin.top - margin.bottom)/resolution.height;
+
+    % Make the mesh to store the result (local to loop)
+    mesh = uint32(zeros(resolution.height, resolution.width));
+    
+    % Number of points outside view
+    outsideCount = uint64(0);
+
+    % Load the files
+    data = parLoad(dataFilename);
+
+    for i = 1:numel(data.eig)
+        
+        % Get the ith eigenvalue
+        z = data.eig(i);
+        
+        % Map the value
+        z = map(z);
+        
+        % Get the real and imaginary parts
+        xVal = real(z);
+        yVal = imag(z);
+        
+        % 1 =====
+        if isInMargins(xVal, yVal, margin)
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
+    end
+
+    % Print number of points outside view
+    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
+
+    % Write mesh to a temporary .mat file
+    parSave(tmpFilename, 1, mesh);
+
+end
+
+
+% -------------------------------------------------------------------------
+function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -675,19 +746,56 @@ function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFi
     data = parLoad(dataFilename);
 
     for i = 1:numel(data.eig)
-        
-        xVal = real(data.eig(i));
-        yVal = imag(data.eig(i));
-        
-        if xVal > margin.left && xVal <= margin.right && yVal > margin.bottom && yVal <= margin.top
 
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx <= resolution.width && yIdx > 0 && yIdx <= resolution.height
-                mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-            end
+        % Get the ith eigenvalue
+        z = data.eig(i);
+        
+        % Map the value
+        z = map(z);
+        
+        % Get the real and imaginary parts
+        xVal = real(z);
+        yVal = imag(z);
+        
+        % 1 =====
+        if isInMargins(xVal, yVal, margin)
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
+        % 2 =====
+        xVal = xVal * -1;
+        if isInMargins(xVal, yVal, margin)
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
+        % 3 =====
+        yVal = yVal * -1;
+        if isInMargins(xVal, yVal, margin)
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
+        % 4 =====
+        xVal = xVal * -1;
+        if isInMargins(xVal, yVal, margin)
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
         else
             outsideCount = outsideCount + 1;
         end
@@ -702,85 +810,69 @@ function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFi
 end
 
 
-% ----------------------------------------------------------------------
-function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename)
-
+% -------------------------------------------------------------------------
+function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
+    
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
     pointHeight = (margin.top - margin.bottom)/resolution.height;
-
-    % Make the mesh to store the result (local to loop)
-    mesh = uint32(zeros(resolution.height, resolution.width));
-
+    
+    % Make the mesh to store the result
+    count = uint32(zeros(resolution.height, resolution.width));
+    total = zeros(resolution.height, resolution.width);
+    
+    
     % Number of points outside view
     outsideCount = uint64(0);
-
+    
     % Load the files
     data = parLoad(dataFilename);
-
+    
+    % Check that the number of values in the real and imaginary files
+    % are the same
+    if numel(data.eig) ~= numel(data.cond)
+        error 'Error, eigenvalues and condition number values do not match';
+    end
+    
     for i = 1:numel(data.eig)
-
-        xVal = real(data.eig(i));
-        yVal = imag(data.eig(i));
         
-        if xVal > margin.left && xVal <= margin.right && yVal > margin.bottom && yVal <= margin.top
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx <= resolution.width && yIdx > 0 && yIdx <= resolution.height
-                mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-            end
-
-            % 2 =====
-            xVal = xVal * -1;
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx < resolution.width && yIdx > 0 && yIdx < resolution.height
-                mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-            end
-
-            % 3 =====
-            yVal = yVal * -1;
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx < resolution.width && yIdx > 0 && yIdx < resolution.height
-                mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-            end
-
-            % 4 =====
-            xVal = xVal * -1;
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx < resolution.width && yIdx > 0 && yIdx < resolution.height
-                mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-            end
-
+        % Get the ith eigenvalue
+        z = data.eig(i);
+        
+        % Map the value
+        z = map(z);
+        
+        % Get the real and imaginary parts
+        xVal = real(z);
+        yVal = imag(z);
+        
+        % Get the condition number
+        cVal = data.cond(i);
+        
+        if isInMargins(xVal, yVal, margin)
+            
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
+            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
         else
             outsideCount = outsideCount + 1;
         end
     end
-
+    
     % Print number of points outside view
     fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
-
+    
     % Write mesh to a temporary .mat file
-    parSave(tmpFilename, 1, mesh);
+    parSave(tmpFilename_count, 1, count);
+    parSave(tmpFilename_total, 1, total);
 
 end
 
 
-function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total)
+% -------------------------------------------------------------------------
+function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -789,7 +881,6 @@ function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
     % Make the mesh to store the result
     count = uint32(zeros(resolution.height, resolution.width));
     total = zeros(resolution.height, resolution.width);
-
 
     % Number of points outside view
     outsideCount = uint64(0);
@@ -805,117 +896,70 @@ function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
 
     for i = 1:numel(data.eig)
 
-        xVal = real(data.eig(i));
-        yVal = imag(data.eig(i));
+        % Get the ith eigenvalue
+        z = data.eig(i);
+        
+        % Map the value
+        z = map(z);
+        
+        % Get the real and imaginary parts
+        xVal = real(z);
+        yVal = imag(z);
+        
+        % Get the condition number
         cVal = data.cond(i);
-
-        if xVal > margin.left && xVal <= margin.right && yVal > margin.bottom && yVal <= margin.top
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx <= resolution.width && yIdx > 0 && yIdx <= resolution.height
-                count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-                total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-            end
+        
+        % 1 =====
+        if isInMargins(xVal, yVal, margin)
+            
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
+            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
         else
             outsideCount = outsideCount + 1;
         end
+        
+        % 2 =====
+        xVal = xVal * -1;
+        if isInMargins(xVal, yVal, margin)
+            
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            
+            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
+            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
+        % 3 =====
+        yVal = yVal * -1;
+        if isInMargins(xVal, yVal, margin)
+            
+            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
+            
+            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
+            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
+        % 4 =====
+        xVal = xVal * -1;
+        
+        if isInMargins(xVal, yVal, margin)
+            
+            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
+            
+            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
+            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
+        else
+            outsideCount = outsideCount + 1;
+        end
+        
     end
-
-    % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
     
-    % Write mesh to a temporary .mat file
-    parSave(tmpFilename_count, 1, count);
-    parSave(tmpFilename_total, 1, total);
-
-end
-
-function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total)
-
-    % Sizes of the points
-    pointWidth = (margin.right - margin.left)/resolution.width;
-    pointHeight = (margin.top - margin.bottom)/resolution.height;
-
-    % Make the mesh to store the result
-    count = uint32(zeros(resolution.height, resolution.width));
-    total = zeros(resolution.height, resolution.width);
-
-
-    % Number of points outside view
-    outsideCount = uint64(0);
-
-    % Load the files
-    data = parLoad(dataFilename);
-
-    % Check that the number of values in the real and imaginary files
-    % are the same
-    if numel(data.eig) ~= numel(data.cond)
-        error 'Error, eigenvalues and condition number values do not match';
-    end
-
-    for i = 1:numel(data.eig)
-
-        xVal = real(data.eig(i));
-        yVal = imag(data.eig(i));
-        cVal = data.cond(i);
-
-
-        if xVal > margin.left && xVal <= margin.right && yVal > margin.bottom && yVal <= margin.top
-
-            % 1 =====
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx <= resolution.width && yIdx > 0 && yIdx <= resolution.height
-                count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-                total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-            end
-
-            % 2 =====
-            xVal = xVal * -1;
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx < resolution.width && yIdx > 0 && yIdx < resolution.height
-                count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-                total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-            end
-
-            % 3 =====
-            yVal = yVal * -1;
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx < resolution.width && yIdx > 0 && yIdx < resolution.height
-                count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-                total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-            end
-
-            % 4 =====
-            xVal = xVal * -1;
-
-            xIdx = uint32(floor((xVal - margin.left)/pointWidth));
-            yIdx = uint32(floor((yVal - margin.bottom)/pointHeight));
-            yIdx = resolution.height - yIdx + 1;
-
-            if xIdx > 0 && xIdx < resolution.width && yIdx > 0 && yIdx < resolution.height
-                count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-                total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-            end
-
-        else
-            outsideCount = outsideCount + 1;
-        end
-    end
-
     % Print number of points outside view
     fprintf('%.4f%% of points outside margins\n', outsideCount/numel(data.eig)*100);
 
@@ -926,13 +970,22 @@ function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename
 end
 
 
+% -------------------------------------------------------------------------
+function b = isInMargins(x, y, margin)
+    
+    b = x > margin.left && x < margin.right && y > margin.bottom && y < margin.top;
+    
+end
 
+
+% -------------------------------------------------------------------------
 % Use in place of load in a parfor loop
 function l = parLoad(fName)
     l = load(fName);
 end
 
 
+% -------------------------------------------------------------------------
 % Use in place of save in a parfor loop
 function parSave(fname,numvars,varargin)
     for i = 1:numvars
