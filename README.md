@@ -236,5 +236,5 @@ processImage(workingDir, fname, T, x);
 produces the image:
 
 <p align="center">
-![4x4 Symmetric Complex Matrices](https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png)
+    <img alt="4x4 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png"/>
 </p>
