@@ -66,25 +66,7 @@ There are 4 options that can be provided to the function.
 | `numFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
 | `matricesPerFile` | `1000000/matrixSize` | Control how many matrices eigenvalues/condition numbers are in each file |
 
-##### `filenamePrefix`
-This option is set to `'BHIME'` by default.
-
-It is the name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer.
-
-##### `startFileIndex`
-This option is set to 1 more than the highest index of the files in the data directory by default. Only use this if you have already computed data and would like to compute more.
-
-##### `numFiles`
-This is set to 1 by default
-
-Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues of `matricesPerFile` random matrices.
-
-##### `matricesPerFile`
-This is set to `1000000/matrixSize` by default
-
-Use this option to control how many eigenvalue-condition number pairs are stored in each file.
-
-__How to determine a good value__:
+__How to determine a good value for `matricesPerFile`__:
 Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
 By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
 
