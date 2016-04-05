@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 7/2016                                                 %
+% UPDATED ... Apr. 5/2016                                                 %
 %                                                                         %
 % This function will generate .mat files containing the eigenvalues and   %
 % their respective condition numbers for a sample of matrices. The        %
@@ -68,8 +68,6 @@ function generateRandomSample(generator, workingDir, options)
     elseif nargin < 2
         error('generateRandomSample:NotEnoughInputs', ...
               'requires at least 2 input arguments');
-    elseif nargin == 2
-        options = struct();
     end
     
     % Check that generator is a function handle
@@ -89,11 +87,19 @@ function generateRandomSample(generator, workingDir, options)
     matrixSize = max(size(generator()));
     
     % Process the options
-    opts = processOptions();
-    startFileIndex = opts.startFileIndex;
-    numFiles = opts.numFiles;
+    opts = processOptions(options);
+    
+    startFileIndex  = opts.startFileIndex;
+    numFiles        = opts.numDataFiles;
     matricesPerFile = opts.matricesPerFile;
-    filenamePrefix = opts.filenamePrefix;
+    filenamePrefix  = opts.filenamePrefix;
+    
+    if ~opts.startFileIndexIsSet
+        startFileIndex = getStartFileIndex();
+    end
+    if ~opts.matricesPerFileIsSet
+        matricesPerFile = floor(1e6/matrixSize);
+    end
     
     % Write a readme file
     writeReadMe();
@@ -213,96 +219,6 @@ function generateRandomSample(generator, workingDir, options)
         % Increment by 1
         imax = imax + 1;
         
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % processOptions                                                      %
-    %                                                                     %
-    % Process the options input options struct. If an option is not in    %
-    % the options struct the default value is used.                       %
-    %                                                                     %
-    % INPUT                                                               %
-    %   options ... (struct) contains keys corresponding to the options   %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A struct opts with keys                                           %
-    %       startFileIndex                                                %
-    %       numFiles                                                      %
-    %       matricesPerFile                                               %
-    %       filenamePrefix                                                %
-    %                                                                     %
-    % TO DO                                                               %
-    %   - Add type checking for options                                   %
-    % ------------------------------------------------------------------- %
-    function opts = processOptions()
-        
-        % Check that options is a struct
-        if ~isstruct(options)
-            error('processData:InvalidOptionsStruct', ...
-                  'options argument must be a structured array');
-        end
-        
-        fnames = fieldnames(options);
-        
-        optionNames = struct('startFileIndex', 'startFileIndex', ...
-                             'numFiles', 'numFiles', ...
-                             'matricesPerFile', 'matricesPerFile', ...
-                             'filenamePrefix', 'filenamePrefix');
-        
-        if ~all(ismember(fnames, fieldnames(optionNames)))
-            error('processData:InvalidOption',  ...
-                  'Invalid option provided');
-        end
-        
-        % Default values
-        startFileIndex  = -1;
-        numFiles        = 1;
-        matricesPerFile = floor(1e6/matrixSize);
-        filenamePrefix  = 'BHIME';
-        
-        % numFiles
-        if isfield(options, optionNames.numFiles)
-            numFiles = options.numFiles;
-            
-            % Check that numFiles is a positive integer
-            if ~((numFiles>0)&(mod(numFiles,1)==0))
-                error('numFiles option must be a positive integer');
-            end
-        end
-        
-        % matricesPerFile
-        if isfield(options, optionNames.matricesPerFile)
-            matricesPerFile = options.matricesPerFile;
-            
-            % Check that matricesPerFile is a positive integer
-            if ~((matricesPerFile>0)&(mod(matricesPerFile,1)==0))
-                error('matricesPerFile option must be a positive integer');
-            end
-        end
-        
-        % filenamePrefix
-        if isfield(options, optionNames.filenamePrefix)
-            filenamePrefix = options.filenamePrefix;
-        end
-        
-        % startFileIndex
-        if isfield(options, optionNames.startFileIndex)
-            startFileIndex = options.startFileIndex;
-            
-            % Check that startFileIndex is a positive integer
-            if ~((startFileIndex>0)&(mod(startFileIndex,1)==0))
-                error('startFileIndex option must be a positive integer');
-            end
-            
-        else
-            startFileIndex = getStartFileIndex();
-        end
-        
-        opts = struct('startFileIndex', startFileIndex, ...
-                      'numFiles', numFiles, ...
-                      'matricesPerFile', matricesPerFile, ...
-                      'filenamePrefix', filenamePrefix);
     end
     
 end

@@ -99,18 +99,20 @@ function outputFilename = processData(workingDir, colorBy, options)
     mkdir_if_not_exist(processDataDir);
     
     % Process the options
-    opts = processOptions();
+    opts = processOptions(options);
     margin         = opts.margin;
-    dataFilePrefix = opts.dataFilePrefix;
+    dataFilePrefix = opts.filenamePrefix;
     outputFileType = opts.outputFileType;
     symmetry       = opts.symmetry;
-    numFiles       = opts.numFiles;
+    numFiles       = opts.numProcessFiles;
     height         = opts.height;
     map            = opts.map;
     
-    % Check that map is a function handle
-    if ~isa(map, 'function_handle')
-        error('map must be a function handle');
+    if ~opts.numProcessFiles
+        numFiles = getNumFiles()
+    end
+    if ~opts.matricesPerFileIsSet
+        margin = getDefaultMargin()
     end
     
     % Get resolution
@@ -378,108 +380,6 @@ function outputFilename = processData(workingDir, colorBy, options)
     % =====================================================================
     % MORE FUNCTIONS
     % =====================================================================
-    
-    
-    % ------------------------------------------------------------------- %
-    % processOptions                                                      %
-    %                                                                     %
-    % Process the options input options struct. If an option is not in    %
-    % the options struct the default value is used.                       %
-    %                                                                     %
-    % INPUT                                                               %
-    %   options ... (struct) contains keys corresponding to the options   %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A struct opts with keys                                           %
-    %       height                                                        %
-    %       width                                                         %
-    %       dataFilePrefix                                                %
-    %       outputFileType                                                %
-    %       symmetry                                                      %
-    %       numFiles                                                      %
-    % TO DO                                                               %
-    %   - Add type checking for options                                   %
-    % ------------------------------------------------------------------- %
-    function opts = processOptions()
-        
-        % Check that options is a struct
-        if ~isstruct(options)
-            error('processData:InvalidOptionsStruct', ...
-                  'options argument must be a structured array');
-        end
-        
-        fnames = fieldnames(options);
-        
-        optionNames = struct('height', 'height', ...
-                             'margin', 'margin', ...
-                             'dataFilePrefix', 'dataFilePrefix', ...
-                             'outputFileType', 'outputFileType', ...
-                             'symmetry', 'symmetry', ...
-                             'numFiles', 'numFiles', ...
-                             'map', 'map');
-        
-        if ~all(ismember(fnames, fieldnames(optionNames)))
-            error('processData:InvalidOption',  ...
-                  'Invalid option provided');
-        end
-        
-        % Default values
-        height = 1001;
-        dataFilePrefix = 'BHIME';
-        outputFileType = 'mat';
-        symmetry = false;
-        map = @(z) z;
-        
-        
-        % height
-        if isfield(options, 'height')
-            height = options.height;
-        end
-        
-        % dataFilenamePrefix
-        if isfield(options, 'dataFilePrefix')
-            dataFilePrefix = options.dataFilePrefix;
-        end
-        
-        % outputFileType
-        if isfield(options, 'outputFileType')
-            outputFileType = options.outputFileType;
-        end
-        
-        % symmetry
-        if isfield(options, 'symmetry')
-            symmetry = options.symmetry;
-        end
-        
-        % map
-        if isfield(options, 'map')
-            map = options.map;
-        end
-        
-        % ------------------
-        
-        numFiles = getNumFiles();
-        % numFiles
-        if isfield(options, 'numFiles')
-            numFiles = options.numFiles;
-        end
-        
-        % margin
-        if isfield(options, 'margin')
-            margin = options.margin;
-        else
-            margin = getDefaultMargin();
-        end
-        
-        opts = struct('height', height, ...
-                      'margin', margin, ...
-                      'dataFilePrefix', dataFilePrefix, ...
-                      'outputFileType', outputFileType, ...
-                      'symmetry', symmetry, ...
-                      'numFiles', numFiles, ...
-                      'map', map);
-        
-    end
     
     
     % ------------------------------------------------------------------- %

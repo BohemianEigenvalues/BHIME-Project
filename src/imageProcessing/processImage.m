@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 8/2016                                                 %
+% UPDATED ... Apr. 5/2016                                                 %
 %                                                                         %
 % Convert processed data from a .mat or .txt file into an image given a   %
 % color map. A new directory Images will be created in the working        %
@@ -61,7 +61,7 @@ function processImage(workingDir, processedDataFilename, cmap, x, options)
     mkdir_if_not_exist(imagesDir);
     
     % Process the options
-    opts = processOptions();
+    opts = processOptions(options);
     backgroundColor = opts.backgroundColor;
     
     dataFile = [processDataDir, processedDataFilename];
@@ -222,52 +222,6 @@ function processImage(workingDir, processedDataFilename, cmap, x, options)
         
         % End YES!!!!!!!
         % -------------------------
-        
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % processOptions                                                      %
-    %                                                                     %
-    % Process the options input options struct. If an option is not in    %
-    % the options struct the default value is used.                       %
-    %                                                                     %
-    % INPUT                                                               %
-    %   options ... (struct) contains keys corresponding to the options   %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A struct opts with keys                                           %
-    %       backgroundColor                                               %
-    % TO DO                                                               %
-    %   - Add type checking for options                                   %
-    % ------------------------------------------------------------------- %
-    function opts = processOptions()
-        
-        % Check that options is a struct
-        if ~isstruct(options)
-            error('processData:InvalidOptionsStruct', ...
-                  'options argument must be a structured array');
-        end
-        
-        fnames = fieldnames(options);
-        
-        optionNames = struct('backgroundColor', 'backgroundColor');
-        
-        if ~all(ismember(fnames, fieldnames(optionNames)))
-            error('processData:InvalidOption',  ...
-                  'Invalid option provided');
-        end
-        
-        % Default values
-        backgroundColor = [0, 0, 0];
-        
-        
-        % height
-        if isfield(options, 'backgroundColor')
-            backgroundColor = options.backgroundColor;
-        end
-        
-        opts = struct('backgroundColor', backgroundColor);
         
     end
     

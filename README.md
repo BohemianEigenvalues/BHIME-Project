@@ -11,6 +11,10 @@ The code is separated into 4 main components:
 - [Processing the eigenvalues into a grid in the complex plane](https://github.com/steventhornton/BHIME-Project#processing-the-eigenvalues)
 - [Producing an image of the eigenvalues](https://github.com/steventhornton/BHIME-Project#making-an-image)
 
+__[Full examples](https://github.com/steventhornton/BHIME-Project#examples) as well as the images they produce can be found in the last section__
+
+To use the code, the entire `src` folder (and subfolders) __must__ be in your Matlab working directory.
+
 # Generating Random Matrices
 Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory.
 
@@ -61,10 +65,18 @@ There are 4 options that can be provided to the function.
 
 | Option Name | Default | Details |
 | ----------- | ------- | ------- |
-| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. THe names of the data files take the form: `filenamPrefix + '_' + i` where `i` is a positive integer. |
+| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. THe names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer. |
 | `startFileIndex` | 1 more than the highest index of the files in the data  directory, 1 if no files have been written | Only use this if you have already computed data and would like to compute more |
-| `numFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
+| `numDataFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
+| `numProcessFiles` | All files in the `Data` directory | The number of data files to process |
 | `matricesPerFile` | `1000000/matrixSize` | Control how many matrices eigenvalues/condition numbers are in each file |
+| `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
+| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
+| `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
+| `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
+| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
+| `backgroundColor` | `[0, 0, 0]` (black) | Set this to a vector with 3 values representing the RGB values (between 0 and 1) to change the background color of the image that is produced |
+
 
 __How to determine a good value for `matricesPerFile`__:
 Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
@@ -110,18 +122,6 @@ generateRandomSample(g, workingDir, options);
 
 # Processing the Eigenvalues
 
-## Options
-
-| Option Name | Default | Details |
-| ----------- | ------- | ------- |
-| `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
-| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
-| `dataFilePrefix` | `BHIME` | The prefix for the .mat files that contain the eigenvalues and their condition numbers |
-| `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
-| `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
-| `numFiles` | All files in the `Data` directory | The number of data files to process |
-| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
-
 ## Examples
 
 #### Simple example
@@ -157,7 +157,7 @@ fname = processData(workingDir, 'cond', opts);
 
 # Making an Image
 
-# Complete Examples
+# Examples
 
 ### Example 1:
 This simple example explores the eigenvalues of random 5x5 matrices with entries sampled from {-1, 0, 1}
@@ -206,20 +206,17 @@ g = @() randomSymmetricMatrix(population, n);
 workingDir = '~/ComplexSymmetric/';
 
 % Set the options
-opts = struct('numFiles', 10, ...
-              'matricesPerFile', 1e6);
-
-% Generate the data (may take a few minutes)
-generateRandomSample(g, workingDir, opts);
-
-% Options for processing the data
 margin = struct('bottom', -4, ...
                 'top', 4, ...
                 'left', -4, ...
                 'right', 4);
-
-opts = struct('height', 501, ...
+opts = struct('numDataFiles', 10, ...
+              'matricesPerFile', 1e6, ...
+              'height', 501, ...
               'margin', margin);
+
+% Generate the data (may take a few minutes)
+generateRandomSample(g, workingDir, opts);
 
 % Process the data
 colorBy = 'density';
@@ -238,3 +235,10 @@ produces the image:
 <p align="center">
     <img alt="4x4 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png"/>
 </p>
+
+# To DO
+
+- Add method for automatic colormap weights
+- Clean up `processImage` function
+- Combine options structs for all methods and make one `processOptions` function
+-
