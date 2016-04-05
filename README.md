@@ -245,5 +245,3 @@ produces the image:
 
 - Add method for automatic colormap weights
 - Clean up `processImage` function
-- Combine options structs for all methods and make one `processOptions` function
--
