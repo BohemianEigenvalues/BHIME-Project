@@ -60,11 +60,6 @@ This function will:
 - Create a new directory `Data` in the input working directory
 - By default it will generate 1000000/n (n is the size of your matrices) matrices and store their eigenvalues and condition numbers in a `.mat` file
 
-
-__How to determine a good value for `matricesPerFile`__:
-Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
-By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
-
 ### Examples
 
 __Simple example of generating eigenvalue data__
@@ -105,29 +100,6 @@ generateRandomSample(g, workingDir, options);
 
 # Processing the Eigenvalues
 
-# Options
-Each of the methods
-
-- `generateRandomSample`
-- `processData`
-- `processImage`
-
-take an optional extra input value. This is an options struct that controls several things when producing/processing eigenvalues. All options are summarized in the table below.
-
-| Option Name | Default | Details |
-| ----------- | ------- | ------- |
-| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer. |
-| `startFileIndex` | 1 more than the highest index of the files in the data  directory, 1 if no files have been written | Only use this if you have already computed data and would like to compute more |
-| `numDataFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
-| `numProcessFiles` | All files in the `Data` directory | The number of data files to process |
-| `matricesPerFile` | `1000000/matrixSize` | Control how many matrices eigenvalues/condition numbers are in each file |
-| `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
-| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
-| `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
-| `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
-| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
-| `backgroundColor` | `[0, 0, 0]` (black) | Set this to a vector with 3 values representing the RGB values (between 0 and 1) to change the background color of the image that is produced |
-
 ## Examples
 
 #### Simple example
@@ -162,6 +134,33 @@ fname = processData(workingDir, 'cond', opts);
 ```
 
 # Making an Image
+
+# Options
+Each of the methods
+
+- `generateRandomSample`
+- `processData`
+- `processImage`
+
+take an optional extra input value. This is an options struct that controls several things when producing/processing eigenvalues. All options are summarized in the table below.
+
+| Option Name | Default | Details |
+| ----------- | ------- | ------- |
+| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer. |
+| `startFileIndex` | 1 more than the highest index of the files in the data  directory, 1 if no files have been written | Only use this if you have already computed data and would like to compute more |
+| `numDataFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
+| `numProcessFiles` | Number of files in the `Data` directory | The number of data files to process |
+| `matricesPerFile` | `1000000/matrixSize` | Control how many matrices eigenvalues/condition numbers are in each file |
+| `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
+| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
+| `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
+| `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
+| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
+| `backgroundColor` | `[0, 0, 0]` (black) | Set this to a vector with 3 values representing the RGB values (between 0 and 1) to change the background color of the image that is produced |
+
+__How to determine a good value for `matricesPerFile`__:
+Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
+By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
 
 # Examples
 
