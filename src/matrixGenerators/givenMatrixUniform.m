@@ -3,8 +3,8 @@
 % EMAIL ..... sthornt7@uwo.ca                                             %
 % UPDATED ... Apr. 5/2016                                                 %
 %                                                                         %
-% This function will generate a matrix such that some entries are         %
-% uniformly distributed.                                                  %
+% This function will take a sqaure matrix and replace specified entries   %
+% by random continuous uniform random values.                             %
 %                                                                         %
 % INPUT                                                                   %
 %   B ......... A nxn matrix                                              %

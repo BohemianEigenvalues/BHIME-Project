@@ -311,7 +311,8 @@ margin = struct('bottom', -4, ...
                 'right',   4);
 opts = struct('matricesPerFile', 1e6, ...
               'height',          501, ...
-              'margin',          margin);
+              'margin',          margin, ...
+              'backgroundColor', [1, 1, 1]);
 
 % Generate the data (may take a few minutes)
 generateRandomSample(g, workingDir, opts);
@@ -321,13 +322,12 @@ colorBy = 'density';
 fname = processData(workingDir, colorBy, opts);
 
 % White gradient
-T = [0, 0, 0;
-     160, 160, 160;
-     255, 255, 255]./255;
-x = [0.0, 0.6, 1.0];
+T = [225, 128, 200;
+       0,   0,   0]./255;
+x = [0.0, 1.0];
 
 % Make an image
-processImage(workingDir, fname, T, x);
+processImage(workingDir, fname, T, x, opts);
 ```
 produces the image:
 

@@ -100,7 +100,7 @@ function processImage(workingDir, processedDataFilename, cmap, x, options)
     % Apply the color map
     valid = isfinite(mesh); % Clean this up
     bounds = [min(mesh(valid)) max(mesh(valid))];   % Clean this up
-    rgb = double2rgb(mesh, map, bounds, backgroundColor/255);
+    rgb = double2rgb(mesh, map, bounds, backgroundColor);
     
     % Write the image to a file
     imwrite(rgb, [imagesDir, outputImageFilename]);
