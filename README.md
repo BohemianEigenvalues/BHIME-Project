@@ -13,9 +13,9 @@ The code is separated into 4 main components:
 
 __[Full examples](https://github.com/steventhornton/BHIME-Project#examples) as well as the images they produce can be found in the last section__
 
-### Requirements
-- The __Parallel Computing Toolbox__ must be installed. If you do not have the parallel toolbox install you may modify the code slightly by changing the `parfor` loops to `for` loops.
-- All contents (files and subfolders) of the `src` directory must be in your Matlab working directory
+#### Requirements
+- The __Parallel Computing Toolbox__ must be installed. If you do not have the parallel computing toolbox install you may modify the code slightly by changing any `parfor` loops to `for` loops.
+- All contents (files and subfolders) of the `src` directory must be in your Matlab working directory.
 
 # Generating Random Matrices
 Several functions have been provided that will return random matrices given some input values (size, sampling values, etc.). All functions for generating random matrices can be found in the `matrixGenerators` directory.
