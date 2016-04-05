@@ -332,7 +332,7 @@ processImage(workingDir, fname, T, x, opts);
 produces the image:
 
 <p align="center">
-    <img alt="4x4 matrix with 2 uniformly sampled enties" src="https://s3.amazonaws.com/stevenethornton.github/Given_4x4.png"/>
+    <img alt="4x4 matrix with 2 uniformly sampled enties." src="https://s3.amazonaws.com/stevenethornton.github/Given_4x4.png"/>
 </p>
 
 
