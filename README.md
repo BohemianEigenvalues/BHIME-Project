@@ -178,7 +178,7 @@ By setting the `numDataFiles` option you can generate many files, each of which 
 
 # Examples
 
-### Example 1:
+### Example 1
 This simple example explores the eigenvalues of random 5x5 matrices with entries sampled from {-1, 0, 1}
 ```matlab
 workingDir = '~/Real5x5/';
@@ -200,9 +200,18 @@ pFilename = processData(workingDir, colorBy);
 
 % Make the image ------------------
 
-T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
-     0, 0,   255,  255,  255,  0,    0,   255,  255;
-     0, 255, 255,  0,    0,    0,    0,   255,  255];
+% Colormap
+T = [  0,   0,   0;
+       0,   0, 255;
+       0, 255, 255;
+       0, 255,   0;
+     255, 255,   0;
+     255,   0,   0;
+     255,   0,   0;
+     255, 255, 255;
+     255, 255, 255]/255;
+
+% Weights for the colormap
 x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 
 % Plot image ---------------------
@@ -244,9 +253,18 @@ generateRandomSample(g, workingDir, opts);
 colorBy = 'density';
 fname = processData(workingDir, colorBy, opts);
 
-T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
-     0, 0,   255,  255,  255,  0,    0,   255,  255;
-     0, 255, 255,  0,    0,    0,    0,   255,  255]'./255;
+% Colormap
+T = [  0,   0,   0;
+       0,   0, 255;
+       0, 255, 255;
+       0, 255,   0;
+     255, 255,   0;
+     255,   0,   0;
+     255,   0,   0;
+     255, 255, 255;
+     255, 255, 255]/255;
+
+% Weights for colormap
 x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 
 % Make an image
@@ -286,9 +304,18 @@ generateRandomSample(g, workingDir, opts);
 colorBy = 'density';
 fname = processData(workingDir, colorBy, opts);
 
-T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
-     0, 0,   255,  255,  255,  0,    0,   255,  255;
-     0, 255, 255,  0,    0,    0,    0,   255,  255]'./255;
+% Colormap
+T = [  0,   0,   0;
+       0,   0, 255;
+       0, 255, 255;
+       0, 255,   0;
+     255, 255,   0;
+     255,   0,   0;
+     255,   0,   0;
+     255, 255, 255;
+     255, 255, 255]/255;
+
+% Weights for colormap
 x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 
 % Make an image
@@ -335,7 +362,7 @@ fname = processData(workingDir, colorBy, opts);
 
 % Purple gradient
 T = [225, 128, 200;
-       0,   0,   0]./255;
+       0,   0,   0]/255;
 x = [0.0, 1.0];
 
 % Make an image
