@@ -50,7 +50,7 @@ randomSymmetricMatrix(population, n);
 
 ### Custom Generator Functions
 Writing your own random matrix generator function is simple. There is only one rule:
-- They must return square matrices of the same size each time you call the generator
+- It must return square matrices of the same size each time you call the generator
 
 
 # Sampling Eigenvalues
@@ -144,7 +144,7 @@ Each of the methods
 - `processData`
 - `processImage`
 
-take an optional extra input value. This is an options struct that controls several things when producing/processing eigenvalues. All options are summarized in the table below.
+take an optional input value. It is a Matlab struct that controls several things when producing/processing eigenvalues. All options are summarized in the table below.
 
 | Option Name | Default | Details |
 | ----------- | ------- | ------- |
@@ -214,13 +214,13 @@ workingDir = '~/ComplexSymmetric/';
 
 % Set the options
 margin = struct('bottom', -4, ...
-                'top', 4, ...
-                'left', -4, ...
-                'right', 4);
-opts = struct('numDataFiles', 10, ...
+                'top',     4, ...
+                'left',   -4, ...
+                'right',   4);
+opts = struct('numDataFiles',    10, ...
               'matricesPerFile', 1e6, ...
-              'height', 501, ...
-              'margin', margin);
+              'height',          501, ...
+              'margin',          margin);
 
 % Generate the data (may take a few minutes)
 generateRandomSample(g, workingDir, opts);
@@ -230,8 +230,8 @@ colorBy = 'density';
 fname = processData(workingDir, colorBy, opts);
 
 T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
-      0, 0,   255,  255,  255,  0,    0,   255,  255;
-      0, 255, 255,  0,    0,    0,    0,   255,  255]'./255;
+     0, 0,   255,  255,  255,  0,    0,   255,  255;
+     0, 255, 255,  0,    0,    0,    0,   255,  255]'./255;
 x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 
 % Make an image
@@ -243,7 +243,51 @@ produces the image:
     <img alt="4x4 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png"/>
 </p>
 
-# To DO
+### Example 3
+```matlab
+n = 5;  % 5x5 matrices
+
+% Entries for matrices
+population = [-20, -1, 0, 1, 20];
+
+% The generator
+g = @() randomMatrix(population, n);
+
+workingDir = '~/Real5x5-wide/';
+
+% Set the options
+margin = struct('bottom', -40, ...
+                'top',     40, ...
+                'left',   -50, ...
+                'right',   50);
+opts = struct('numDataFiles',    1, ...
+              'matricesPerFile', 1e6, ...
+              'height',          501, ...
+              'margin',          margin);
+
+% Generate the data (may take a few minutes)
+generateRandomSample(g, workingDir, opts);
+
+% Process the data
+colorBy = 'density';
+fname = processData(workingDir, colorBy, opts);
+
+T = [0, 0,   0,    0,    255,  255,  255, 255,  255;
+     0, 0,   255,  255,  255,  0,    0,   255,  255;
+     0, 255, 255,  0,    0,    0,    0,   255,  255]'./255;
+x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
+
+% Make an image
+processImage(workingDir, fname, T, x);
+```
+produces the image:
+
+<p align="center">
+    <img alt="4x4 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/Real5x5-Wide.png"/>
+</p>
+
+
+# To Do
 
 - Add method for automatic colormap weights
 - Clean up `processImage` function
