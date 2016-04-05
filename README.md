@@ -200,7 +200,7 @@ plotImage(workingDir, pFilename,  T, x);
 This produces the image:
 
 <p align="center">
-    <img alt="5x5 matrices with entries sampled from {-1, 0, 1}" src="https://s3.amazonaws.com/stevenethornton.github/Image-1.png"/>
+    <img alt="5x5 matrices with entries sampled from {-1, 0, 1}" src="https://s3.amazonaws.com/stevenethornton.github/Real5x5.png"/>
 </p>
 
 ### Example 2
