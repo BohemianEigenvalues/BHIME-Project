@@ -108,8 +108,8 @@ function outputFilename = processData(workingDir, colorBy, options)
     height         = opts.height;
     map            = opts.map;
     
-    if ~opts.numProcessFiles
-        numFiles = getNumFiles()
+    if ~opts.numProcessFilesIsSet
+        numFiles = getNumFiles();
     end
     if ~opts.matricesPerFileIsSet
         margin = getDefaultMargin()
@@ -429,8 +429,6 @@ function outputFilename = processData(workingDir, colorBy, options)
         else
             dataDir = [workingDir, filesep, 'Data', filesep];
         end
-        
-        disp(dataDir);
         
         folderInfo = dir(dataDir);
         

@@ -198,7 +198,10 @@ plotImage(workingDir, pFilename,  T, x);
 ```
 
 This produces the image:
-![5x5 Integer Matrices](https://s3.amazonaws.com/stevenethornton.github/Image-1.png)
+
+<p align="center">
+    <img alt="5x5 matrices with entries sampled from {-1, 0, 1}" src="https://s3.amazonaws.com/stevenethornton.github/Image-1.png"/>
+</p>
 
 ### Example 2
 ```matlab
@@ -240,7 +243,7 @@ processImage(workingDir, fname, T, x);
 produces the image:
 
 <p align="center">
-    <img alt="4x4 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png"/>
+    <img alt="4x4 Complex Symmetric Matrices" src="https://s3.amazonaws.com/stevenethornton.github/ComplexSymmetric_4x4.png"/>
 </p>
 
 ### Example 3
@@ -260,8 +263,7 @@ margin = struct('bottom', -40, ...
                 'top',     40, ...
                 'left',   -50, ...
                 'right',   50);
-opts = struct('numDataFiles',    1, ...
-              'matricesPerFile', 1e6, ...
+opts = struct('matricesPerFile', 1e6, ...
               'height',          501, ...
               'margin',          margin);
 
@@ -283,8 +285,56 @@ processImage(workingDir, fname, T, x);
 produces the image:
 
 <p align="center">
-    <img alt="4x4 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/Real5x5-Wide.png"/>
+    <img alt="5x5 Symmetric Complex Matrices" src="https://s3.amazonaws.com/stevenethornton.github/Real5x5-Wide.png"/>
 </p>
+
+### Example 4
+```matlab
+A = [0,  0,  0,  0;
+    -1, -1,  1,  0;
+     0,  0,  0,  0;
+    -1, -1, -1, -1];
+
+% The entries that will follow a uniform distribution A(1,4) and A(3,1)
+entries = [1, 4;
+           3, 1];
+
+% The generator
+g = @() givenMatrixUniform(A, entries, -5, 5);
+
+workingDir = '~/Given_4x4/';
+
+% Set the options
+margin = struct('bottom', -4, ...
+                'top',     4, ...
+                'left',   -4, ...
+                'right',   4);
+opts = struct('matricesPerFile', 1e6, ...
+              'height',          501, ...
+              'margin',          margin);
+
+% Generate the data (may take a few minutes)
+generateRandomSample(g, workingDir, opts);
+
+% Process the data
+colorBy = 'density';
+fname = processData(workingDir, colorBy, opts);
+
+% White gradient
+T = [0, 0, 0;
+     160, 160, 160;
+     255, 255, 255]./255;
+x = [0.0, 0.6, 1.0];
+
+% Make an image
+processImage(workingDir, fname, T, x);
+```
+produces the image:
+
+<p align="center">
+    <img alt="5x5 matrices with entries sampled from {-20, -1, 0, 1, 20}" src="https://s3.amazonaws.com/stevenethornton.github/Given_4x4.png"/>
+</p>
+
 
 
 # To Do
