@@ -102,6 +102,11 @@ generateRandomSample(g, workingDir, options);
 
 # Processing the Eigenvalues
 
+The function used to process the eigenvalues into a grid is the `processData` function in the `dataProcessing` directory.
+
+This function will:
+- Create a new directory `ProcessedData` in the input working directory
+
 ## Examples
 
 #### Simple example
@@ -137,6 +142,13 @@ fname = processData(workingDir, 'cond', opts);
 
 # Making an Image
 
+The function for converting the processed data into an image is the `processImage` function in the `imageProcessing` directory.
+
+This function will:
+- Create a new directory `Images` in the input working directory
+- Write an image (.png) in the Images directory
+- Automatically name the image to avoid overwriting any other images
+
 # Options
 Each of the methods
 
@@ -162,7 +174,7 @@ take an optional input value. It is a Matlab struct that controls several things
 
 __How to determine a good value for `matricesPerFile`__:
 Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
-By setting the `numFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
+By setting the `numDataFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
 
 # Examples
 
