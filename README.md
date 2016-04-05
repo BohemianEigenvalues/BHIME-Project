@@ -321,7 +321,7 @@ generateRandomSample(g, workingDir, opts);
 colorBy = 'density';
 fname = processData(workingDir, colorBy, opts);
 
-% White gradient
+% Purple gradient
 T = [225, 128, 200;
        0,   0,   0]./255;
 x = [0.0, 1.0];
@@ -332,7 +332,8 @@ processImage(workingDir, fname, T, x, opts);
 produces the image:
 
 <p align="center">
-    <img alt="5x5 matrices with entries sampled from {-20, -1, 0, 1, 20}" src="https://s3.amazonaws.com/stevenethornton.github/Given_4x4.png"/>
+    <img alt="5x5 matrices with entries sampled from {-20, -1, 0, 1, 20}" src="https://s3.amazonaws.com/stevenethornton.github/
+    .png"/>
 </p>
 
 
