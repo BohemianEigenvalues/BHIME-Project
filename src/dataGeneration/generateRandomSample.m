@@ -30,7 +30,7 @@
 %                       If you want your files to be indexed with a       %
 %                       custom starting value set this value to a         %
 %                       positive integer value.                           %
-%   numFiles .......... Default = 1                                       %
+%   numDataFiles ...... Default = 1                                       %
 %                       Set this value if you would like to generate      %
 %                       multiple data files                               %
 %   matricesPerFile ... Default = floor(1e6/matrixSize)                   %

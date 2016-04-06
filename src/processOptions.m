@@ -100,7 +100,7 @@ function opts = processOptions(options)
         opts.startFileIndexIsSet = true;
         
         % Check that startFileIndex is a positive integer
-        if ~((startFileIndex>0)&(mod(startFileIndex,1)==0))
+        if ~isposint(opts.startFileIndex)
             error('startFileIndex option must be a positive integer');
         end
     end
@@ -111,7 +111,7 @@ function opts = processOptions(options)
         opts.numDataFiles = options.numDataFiles;
         
         % Check that numFiles is a positive integer
-        if ~((opts.numDataFiles>0)&(mod(opts.numDataFiles,1)==0))
+        if ~isposint(opts.numDataFiles)
             error('numDataFiles option must be a positive integer');
         end
         
@@ -124,10 +124,9 @@ function opts = processOptions(options)
         opts.numProcessFilesIsSet = true;
         
         % Check that numFiles is a positive integer
-        if ~((opts.numProcessFilesIsSet>0)&(mod(opts.numProcessFilesIsSet,1)==0))
+        if ~isposint(opts.numProcessFiles)
             error('numProcessFilesIsSet option must be a positive integer');
         end
-        
     end
     
     % matricesPerFile ------------------
@@ -137,10 +136,9 @@ function opts = processOptions(options)
         opts.matricesPerFileIsSet = true;
         
         % Check that matricesPerFile is a positive integer
-        if ~((opts.matricesPerFile>0)&(mod(opts.matricesPerFile,1)==0))
+        if ~isposint(opts.matricesPerFile)
             error('matricesPerFile option must be a positive integer');
         end
-        
     end
     
     % filenamePrefix -------------------
@@ -148,7 +146,9 @@ function opts = processOptions(options)
         opts.filenamePrefix = options.filenamePrefix;
         
         % TO DO: Add type checking (string, valid filename prefix)
-        
+        if ~isValidString(opts.filenamePrefix)
+            error('filenamePrefix option must be a string');
+        end
     end
     
     % height ---------------------------
@@ -156,6 +156,9 @@ function opts = processOptions(options)
         opts.height = options.height;
         
         % TO DO: Add type checking (positive integer)
+        if ~isposint(opts.height)
+            error('height option must be a positive integer');
+        end
         
     end
     
@@ -174,6 +177,9 @@ function opts = processOptions(options)
         opts.outputFileType = options.outputFileType;
         
         % TO DO: Add type checking (txt or mat)
+        if opts.outputFileType ~= 'txt' || opts.outputFileType ~= 'mat'
+            error('outputFileType option must be either ''txt'' or ''mat''')
+        end
         
     end
     
@@ -204,4 +210,33 @@ function opts = processOptions(options)
         
     end
     
+    % ---------------------------------------------------------------------
+    % Type checking functions
+    % ---------------------------------------------------------------------
+    
+    function b = isposint(x)
+        
+        b = logical(0);
+        
+        try
+            b = logical((x > 0) & (~mod(x, 1)));
+        end
+    end
+    
+    % Source: http://www.mathworks.com/matlabcentral/fileexchange/8847-dstv--datashape---type-verification/content/dstv/isstring.m
+    function b = isValidString(S);
+        % ISSTRING True for 1-D char arrays.
+        %   ISSTRING(S) returns 1 if S is a string. A string is a 1-D char
+        %   array and is therefore the char equivalent of a vector.
+        %
+        %   See also ISVECTOR, ARGCHK.
+        %
+        % @author   Ingo Lhken, ingo.loehken@gmx.de
+        % @rev      DSTV ver 0.1, 25/10/2005
+        b = logical(0);
+        
+        try
+            b = logical(ischar(S) && ndims(S) == 2 && any(size(S) <= 1));
+        end
+    end
 end
