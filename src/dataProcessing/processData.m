@@ -77,14 +77,9 @@ function outputFilename = processData(workingDir, colorBy, options)
     
     tic
     
-    % Check the number of arguments
-    if nargin < 2
-        error('processData:notEnoughInputArguments', ...
-              'function requires at least 4 input values');
-    elseif nargin > 3
-        error('processData:tooManyInputArguments', ...
-        'function requires at most 5 input values');
-    elseif nargin == 2
+    narginchk(2, 3)
+    
+    if nargin < 3
         options = struct();
     end
     
@@ -297,6 +292,7 @@ function outputFilename = processData(workingDir, colorBy, options)
     
         % Compute the average
         mesh = zeros(resolution.height, resolution.width);
+        
         for ii = 1:resolution.height
             for jj = 1:resolution.width
                 if count(ii,jj) ~= 0
@@ -359,6 +355,7 @@ function outputFilename = processData(workingDir, colorBy, options)
     
         % Compute the average
         mesh = zeros(resolution.height, resolution.width);
+        
         for ii = 1:resolution.height
             for jj = 1:resolution.width
                 if count(ii,jj) ~= 0

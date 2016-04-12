@@ -39,14 +39,9 @@
 % ----------------------------------------------------------------------- %
 function processImage(workingDir, processedDataFilename, cmap, x, options)
     
-    % Check the number of arguments
-    if nargin < 4
-        error('processData:notEnoughInputArguments', ...
-              'function requires at least 4 input values');
-    elseif nargin > 5
-        error('processData:tooManyInputArguments', ...
-        'function requires at most 5 input values');
-    elseif nargin == 4
+    narginchk(4, 5);
+    
+    if nargin < 5
         options = struct();
     end
     

@@ -60,14 +60,11 @@
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
 function generateRandomSample(generator, workingDir, options)
-
-    % Check number of input arguments
-    if nargin > 3
-        error('generateRandomSample:TooManyInputs', ...
-              'requires at most 3 input arguments');
-    elseif nargin < 2
-        error('generateRandomSample:NotEnoughInputs', ...
-              'requires at least 2 input arguments');
+    
+    narginchk(2,3);
+    
+    if nargin < 3
+        options = struct();
     end
     
     % Check that generator is a function handle
