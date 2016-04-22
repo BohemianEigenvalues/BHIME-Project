@@ -73,7 +73,7 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function outputFilename = processData(workingDir, colorBy, options)
+function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
     tic
     
@@ -124,17 +124,23 @@ function outputFilename = processData(workingDir, colorBy, options)
     % Call correct function for colorBy argument
     if strcmpi(colorBy, 'density')
         % Call the method for density
-        mesh = process_density();
+        [mesh, totalOutsideCount] = process_density();
     elseif strcmpi(colorBy, 'cond')
         % Call the method for condition number coloring
-        mesh = process_cond();
+        [mesh, totalOutsideCount] = process_cond();
     else
         error 'Invalid value supplied for colorBy argument'
     end
     
-    % Print the number of filled pixels in the image
-    numUniquePts = length(mesh(mesh ~= 0));
-    disp(['numUniquePts ', num2str(numUniquePts)]);
+    % -------------------------
+    % Fill in the statistics struct
+    stats = struct();
+    
+    % Number of unique points
+    stats.numUniquePts = length(mesh(mesh ~= 0));
+    stats.outsideCount = totalOutsideCount;
+    
+    % -------------------------
     
     % Write mesh to a text file
     if strcmp(outputFileType, 'txt')
@@ -152,27 +158,29 @@ function outputFilename = processData(workingDir, colorBy, options)
     
     
     % ---------------------------------------------------------------------
-    function mesh = process_density()
+    function [mesh, totalOutsideCount] = process_density()
         if symmetry
-            mesh = process_density_symmetry();
+            [mesh, totalOutsideCount] = process_density_symmetry();
         else
-            mesh = process_density_no_symmetry();
+            [mesh, totalOutsideCount] = process_density_no_symmetry();
         end
     end
         
     % ---------------------------------------------------------------------
     
-    function mesh = process_cond()
+    function [mesh, totalOutsideCount] = process_cond()
         if symmetry
-            mesh = process_cond_symmetry();
+            [mesh, totalOutsideCount] = process_cond_symmetry();
         else
-            mesh = process_cond_no_symmetry();
+            [mesh, totalOutsideCount] = process_cond_no_symmetry();
         end
     end
     
     % ---------------------------------------------------------------------
-    function mesh = process_density_no_symmetry()
-    
+    function [mesh, totalOutsideCount] = process_density_no_symmetry()
+        
+        totalOutsideCount = zeros(1, numFiles);
+        
         % Process all the data
         parfor i = 1:numFiles
     
@@ -185,12 +193,13 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map);
-    
+            totalOutsideCount(i) = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map);
             toc
     
         end
-    
+        disp(totalOutsideCount);
+        totalOutsideCount = sum(totalOutsideCount);
+        
         % ------------------------
     
         % Make the mesh to store the result (local to loop)
@@ -211,7 +220,9 @@ function outputFilename = processData(workingDir, colorBy, options)
 
     
     % ---------------------------------------------------------------------
-    function mesh = process_density_symmetry()
+    function [mesh, totalOutsideCount] = process_density_symmetry()
+    
+        totalOutsideCount = zeros(1, numFiles);
     
         % Process all the data
         parfor i = 1:numFiles
@@ -225,11 +236,13 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
+            totalOutsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
     
             toc
     
         end
+        
+        totalOutsideCount = sum(totalOutsideCount);
     
         % ------------------------
     
@@ -253,8 +266,10 @@ function outputFilename = processData(workingDir, colorBy, options)
     % =====================================================================
     % =====================================================================
     
-    function mesh = process_cond_no_symmetry()
-    
+    function [mesh, totalOutsideCount] = process_cond_no_symmetry()
+        
+        totalOutsideCount = zeros(1, numFiles);
+        
         % Process all the data
         parfor i = 1:numFiles
     
@@ -268,12 +283,14 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat']
     
             % Call function to save the processed data to a temporary file
-            process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
+            totalOutsideCount(i) = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
     
             toc
     
         end
-    
+        
+        totalOutsideCount = sum(totalOutsideCount);
+        
         % ------------------------
     
         % Make the mesh to store the result
@@ -316,8 +333,11 @@ function outputFilename = processData(workingDir, colorBy, options)
     % ---------------------------------------------------------------------
     
     % ---------------------------------------------------------------------
-    function mesh = process_cond_symmetry()
+    function [mesh, totalOutsideCount] = process_cond_symmetry()
     
+        
+        totalOutsideCount = zeros(1, numFiles);
+        
         % Process all the data
         parfor i = 1:numFiles
     
@@ -331,12 +351,14 @@ function outputFilename = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
+            outsideCount(i) = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
     
             toc
     
         end
-    
+        
+        totalOutsideCount = sum(totalOutsideCount);
+        
         % ------------------------
     
         % Make the mesh to store the result
@@ -580,7 +602,7 @@ end
 % -------------------------------------------------------------------------
 % process_density_no_symmetry_tmp
 % -------------------------------------------------------------------------
-function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
+function outsideCount = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -630,7 +652,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
+function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -712,7 +734,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
+function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
     
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -779,7 +801,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
+function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
