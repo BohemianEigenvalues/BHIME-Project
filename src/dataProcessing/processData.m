@@ -131,7 +131,11 @@ function outputFilename = processData(workingDir, colorBy, options)
     else
         error 'Invalid value supplied for colorBy argument'
     end
-
+    
+    % Print the number of filled pixels in the image
+    numUniquePts = length(mesh(mesh ~= 0));
+    disp(['numUniquePts ', num2str(numUniquePts)]);
+    
     % Write mesh to a text file
     if strcmp(outputFileType, 'txt')
         dlmwrite([processDataDir, outputFilename], mesh, 'delimiter',' ','precision',15);
