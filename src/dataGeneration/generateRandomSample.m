@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 5/2016                                                 %
+% UPDATED ... Apr. 22/2016                                                %
 %                                                                         %
 % This function will generate .mat files containing the eigenvalues and   %
 % their respective condition numbers for a sample of matrices. The        %
@@ -44,6 +44,10 @@
 %                             64*matrixSize*matricesPerFile bits          %
 %                             (Eigenvalues and condition numbers are      %
 %                             stored in single precision)                 %
+%   computeCond ....... Default = true                                    %
+%                       Set this value to false to only compute the       %
+%                       eigenvalues. Should result in a speed improvement %
+%                       of roughly 6 times faster.                        %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -90,6 +94,7 @@ function generateRandomSample(generator, workingDir, options)
     numFiles        = opts.numDataFiles;
     matricesPerFile = opts.matricesPerFile;
     filenamePrefix  = opts.filenamePrefix;
+    computeCond     = opts.computeCond;
     
     if ~opts.startFileIndexIsSet
         startFileIndex = getStartFileIndex();
@@ -118,28 +123,27 @@ function generateRandomSample(generator, workingDir, options)
         
         fprintf('\n%d of %d\n', k, endFileIndex);
         
-        % Vectors to store eigenvalues and condition numbers
-        eig  = single(zeros(matricesPerFile, matrixSize));
-        cond = single(zeros(matricesPerFile, matrixSize));
-        
-        parfor i=1:matricesPerFile
-            
-            % Generator a random matrix
-            A = generator();
-            
-            % Compute eigenvalues and condition numbers w.r.t. eigenvalues
-            [~, D, s] = condeig(A);
-            
-            eig(i,:)  = single(diag(D));
-            cond(i,:) = single(s);
-            
+        if computeCond
+            [eigVals, condVals] = computeEigAndCond();
+        else
+            eigVals = computeEig();
         end
         
         % ---------------
         % Save the data
         generatorStr = func2str(generator);
         filename = [dataDir, filenamePrefix, '_', num2str(k), '.mat'];
-        save(filename, 'eig', 'cond', 'matrixSize', 'generatorStr');
+        
+        if computeCond
+            save(filename, 'eigVals', ...
+                           'condVals', ...
+                           'matrixSize', ...
+                           'generatorStr');
+        else
+            save(filename, 'eigVals', ...
+                           'matrixSize', ...
+                           'generatorStr');
+        end
         % ---------------
         
         % Timing
@@ -156,6 +160,52 @@ function generateRandomSample(generator, workingDir, options)
     % =====================================================================
     % FUNCTIONS
     % =====================================================================
+    
+    
+    % ------------------------------------------------------------------- %
+    % computeEigAndCond                                                   %
+    %                                                                     %
+    % Compute both the eigenvalues and their condition numbers            %
+    % ------------------------------------------------------------------- %
+    function [eigVals, condVals] = computeEigAndCond()
+        
+        % Vectors to store eigenvalues and condition numbers
+        eigVals  = single(zeros(matricesPerFile, matrixSize));
+        condVals = single(zeros(matricesPerFile, matrixSize));
+        
+        parfor i=1:matricesPerFile
+            
+            % Generator a random matrix
+            A = generator();
+            
+            % Compute eigenvalues and condition numbers w.r.t. eigenvalues
+            [~, D, s] = condeig(A);
+            
+            eigVals(i,:)  = single(diag(D));
+            condVals(i,:) = single(s);
+            
+        end
+        
+    end
+    
+    
+    % ------------------------------------------------------------------- %
+    % computeEig                                                          %
+    %                                                                     %
+    % Compute only the eigenvalues                                        %
+    % ------------------------------------------------------------------- %
+    function eigVals = computeEig()
+        
+        % Vectors to store eigenvalues and condition numbers
+        eigVals = single(zeros(matricesPerFile, matrixSize));
+        
+        parfor i=1:matricesPerFile
+            
+            eigVals(i, :) = single(eig(generator()));
+            
+        end
+        
+    end
     
     
     % ------------------------------------------------------------------- %

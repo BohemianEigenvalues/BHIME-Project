@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 13/2016                                                %
+% UPDATED ... Apr. 22/2016                                                %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and sort the eigenvalues onto the complex %
@@ -594,7 +594,7 @@ function process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFi
 
     % Load the eigenvalues
     eigVals = parLoad(dataFilename);
-    eigVals = eigVals.eig;
+    eigVals = eigVals.eigVals;
     
     % Map the eigenvalues
     eigVals = map(eigVals);
@@ -644,7 +644,7 @@ function process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
 
     % Load the eigenvalues
     eigVals = parLoad(dataFilename);
-    eigVals = eigVals.eig;
+    eigVals = eigVals.eigVals;
     
     % Map the eigenvalues
     eigVals = map(eigVals);
@@ -730,13 +730,13 @@ function process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilen
     data = parLoad(dataFilename);
     
     % Get the eigenvalues
-    eigVals = data.eig;
+    eigVals = data.eigVals;
     
     % Map the eigenvalues
     eigVals = map(eigVals);
     
     % Get the eigenvalue condition numbers
-    condVals = data.cond;
+    condVals = data.condVals;
     
     % Check that the number of values in the real and imaginary files
     % are the same
@@ -796,13 +796,13 @@ function process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename
     data = parLoad(dataFilename);
     
     % Get the eigenvalues
-    eigVals = data.eig;
+    eigVals = data.eigVals;
     
     % Map the eigenvalues
     eigVals = map(eigVals);
     
     % Get the eigenvalue condition numbers
-    condVals = data.cond;
+    condVals = data.condVals;
 
     % Check that the number of values in the real and imaginary files
     % are the same

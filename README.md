@@ -171,6 +171,7 @@ take an optional input value. It is a Matlab struct that controls several things
 | `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
 | `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
 | `backgroundColor` | `[0, 0, 0]` (black) | Set this to a vector with 3 values representing the RGB values (between 0 and 1) to change the background color of the image that is produced |
+| `computeCond` | `true` | Set this value to false to compute only the eigenvalues. Should result in a speed improvement of roughly 6 times faster |
 
 __How to determine a good value for `matricesPerFile`__:
 Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.

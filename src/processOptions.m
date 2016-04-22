@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 5/2016                                                 %
+% UPDATED ... Apr. 22/2016                                                %
 %                                                                         %
 % Process the options input options struct. If an option is not in the    %
 % options struct the default value is used.                               %
@@ -23,6 +23,7 @@
 %       map ............... Function handle, one input value.             %
 %                           double -> double                              %
 %       backgroundColor ... [double, double, double] in [0, 1]            %
+%       computeCond ....... bool
 %                                                                         %
 % TO DO                                                                   %
 %   - Add type checking for options                                       %
@@ -65,7 +66,8 @@ function opts = processOptions(options)
                        'outputFileType', 'outputFileType', ...
                              'symmetry', 'symmetry', ...
                                   'map', 'map', ...
-                      'backgroundColor', 'backgroundColor');
+                      'backgroundColor', 'backgroundColor', ...
+                          'computeCond', 'computeCond');
     
     fnames = fieldnames(options);
     
@@ -92,6 +94,7 @@ function opts = processOptions(options)
     opts.symmetry             = false;
     opts.map                  = @(z) z;
     opts.backgroundColor      = [0, 0, 0];
+    opts.computeCond          = true;
     
     % startFileIndex -------------------
     if isfield(options, optNames.startFileIndex)
@@ -207,6 +210,15 @@ function opts = processOptions(options)
         opts.backgroundColor = options.backgroundColor;
         
         % TO DO: Add type checking (vector of 3 values in [0,1])
+        
+    end
+    
+    % computeCond ----------------------
+    if isfield(options, optNames.computeCond)
+        
+        opts.computeCond = options.computeCond;
+        
+        % TO DO: Add type checking (bool)
         
     end
     
