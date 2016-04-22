@@ -123,7 +123,7 @@ function generateRandomSample(generator, workingDir, options)
         cond = single(zeros(matricesPerFile, matrixSize));
         
         parfor i=1:matricesPerFile
-
+            
             % Generator a random matrix
             A = generator();
             
