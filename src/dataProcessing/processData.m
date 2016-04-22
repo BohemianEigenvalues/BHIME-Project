@@ -49,7 +49,11 @@
 %                      The function MUST be vectorized                    %
 %                                                                         %
 % OUTPUT                                                                  %
-%   A string of the name of file that data is written to                  %
+%   fname ... A string of the name of file that data is written to        %
+%   stats ... A struct containing statistics about the data:              %
+%                 numUniquePts ... Number of points containing at least   %
+%                                  one eigenvalue                         %
+%                 outsideCount ... Number of points outside the margin    %
 %                                                                         %
 % TO DO                                                                   %
 %   - Separate symmetry into symmetry across real axis and symmetry       %
@@ -197,7 +201,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
             toc
     
         end
-        disp(totalOutsideCount);
+        
         totalOutsideCount = sum(totalOutsideCount);
         
         % ------------------------
