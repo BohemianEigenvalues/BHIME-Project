@@ -106,7 +106,7 @@ function outputFilename = processData(workingDir, colorBy, options)
     if ~opts.numProcessFilesIsSet
         numFiles = getNumFiles();
     end
-    if ~opts.matricesPerFileIsSet
+    if ~opts.marginIsSet
         margin = getDefaultMargin()
     end
     
@@ -398,7 +398,7 @@ function outputFilename = processData(workingDir, colorBy, options)
         dataFilename = [workingDir, 'Data', filesep, dataFilePrefix, '_1.mat'];
         data = parLoad(dataFilename);
         
-        eigVals = data.eig;
+        eigVals = data.eigVals;
         
         bottom = min(imag(eigVals(:)));
         top    = max(imag(eigVals(:)));
