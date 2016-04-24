@@ -37,6 +37,6 @@ function A = randomToeplitzMatrix(population, n)
 
     vec = randsample(population, 2*n-1, true);
     
-    A = toeplitz(vec(1:n), vec(n:end));
+    A = toeplitz(vec(n:-1:1), vec(n:end));
 
 end

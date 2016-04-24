@@ -240,7 +240,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            totalOutsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
+            totalOutsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map);
     
             toc
     
@@ -635,7 +635,7 @@ function outsideCount = process_density_no_symmetry_tmp(resolution, margin, data
         yVal = imag(z);
         
         % 1 =====
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -685,7 +685,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         yVal = imag(z);
         
         % 1 =====
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -696,7 +696,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         
         % 2 =====
         xVal = xVal * -1;
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -707,7 +707,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         
         % 3 =====
         yVal = yVal * -1;
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -718,7 +718,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         
         % 4 =====
         xVal = xVal * -1;
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -782,7 +782,7 @@ function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFil
         % Get the condition number
         cVal = condVals(i);
         
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
@@ -849,7 +849,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         cVal = condVals(i);
         
         % 1 =====
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
@@ -862,7 +862,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         
         % 2 =====
         xVal = xVal * -1;
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             
@@ -874,7 +874,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         
         % 3 =====
         yVal = yVal * -1;
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -887,7 +887,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         % 4 =====
         xVal = xVal * -1;
         
-        if isInMargins(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             
@@ -910,7 +910,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function b = isInMargins(x, y, margin)
+function b = isInMargin(x, y, margin)
     
     b = x > margin.left && x < margin.right && y > margin.bottom && y < margin.top;
     
