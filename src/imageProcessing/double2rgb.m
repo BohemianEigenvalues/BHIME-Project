@@ -32,7 +32,6 @@ bg = [0 0 0];
 if ~isempty(varargin)
     bg = varargin{1};
 end
-disp(bg);
 
 % get valid pixels (finite value)
 valid = isfinite(img);

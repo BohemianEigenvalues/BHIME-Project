@@ -145,7 +145,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     if strcmp(outputFileType, 'txt')
         dlmwrite([processDataDir, outputFilename], mesh, 'delimiter',' ','precision',15);
     elseif strcmp(outputFileType, 'mat')
-        save([processDataDir, outputFilename], 'mesh');
+        save([processDataDir, outputFilename, stats], 'mesh');
     end
     
     toc

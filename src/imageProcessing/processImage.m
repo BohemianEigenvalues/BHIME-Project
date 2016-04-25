@@ -89,6 +89,9 @@ function processImage(workingDir, processedDataFilename, cmap, x, options)
     % Interpolate data
     mesh = log(double(mesh));
     
+    % Flip so image isn't upside down
+    mesh = flipud(mesh);
+    
     map = interp1(x, cmap, linspace(0, 1, 255));
     % -----------------
     
