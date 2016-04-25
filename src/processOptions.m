@@ -23,7 +23,8 @@
 %       map ............... Function handle, one input value.             %
 %                           double -> double                              %
 %       backgroundColor ... [double, double, double] in [0, 1]            %
-%       computeCond ....... bool
+%       computeCond ....... bool                                          %
+%       ignoreReal ........ bool                                          %
 %                                                                         %
 % TO DO                                                                   %
 %   - Add type checking for options                                       %
@@ -67,7 +68,8 @@ function opts = processOptions(options)
                              'symmetry', 'symmetry', ...
                                   'map', 'map', ...
                       'backgroundColor', 'backgroundColor', ...
-                          'computeCond', 'computeCond');
+                          'computeCond', 'computeCond', ...
+                           'ignoreReal', 'ignoreReal');
     
     fnames = fieldnames(options);
     
@@ -95,6 +97,7 @@ function opts = processOptions(options)
     opts.map                  = @(z) z;
     opts.backgroundColor      = [0, 0, 0];
     opts.computeCond          = true;
+    opts.ignoreReal           = false;
     
     % startFileIndex -------------------
     if isfield(options, optNames.startFileIndex)
@@ -217,6 +220,15 @@ function opts = processOptions(options)
     if isfield(options, optNames.computeCond)
         
         opts.computeCond = options.computeCond;
+        
+        % TO DO: Add type checking (bool)
+        
+    end
+    
+    % ignoreReal -----------------------
+    if isfield(options, optNames.ignoreReal)
+        
+        opts.ignoreReal = options.ignoreReal;
         
         % TO DO: Add type checking (bool)
         

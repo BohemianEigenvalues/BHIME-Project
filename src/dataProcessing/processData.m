@@ -47,6 +47,8 @@
 %   map .............. Default = z -> z (no mapping)                      %
 %                      Map the eigenvalues by a given function handel     %
 %                      The function MUST be vectorized                    %
+%   ignoreReal ....... Default = false                                    %
+%                      Ignore any points that have zero imaginary part    %
 %                                                                         %
 % OUTPUT                                                                  %
 %   fname ... A string of the name of file that data is written to        %
@@ -106,6 +108,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     numFiles       = opts.numProcessFiles;
     height         = opts.height;
     map            = opts.map;
+    ignoreReal     = opts.ignoreReal;
     
     if ~opts.numProcessFilesIsSet
         numFiles = getNumFiles();
@@ -190,7 +193,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            totalOutsideCount(i) = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map);
+            totalOutsideCount(i) = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal);
             toc
     
         end
@@ -244,7 +247,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            totalOutsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map);
+            totalOutsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal);
     
             toc
     
@@ -301,7 +304,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat']
     
             % Call function to save the processed data to a temporary file
-            totalOutsideCount(i) = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
+            totalOutsideCount(i) = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal);
     
             toc
     
@@ -380,7 +383,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
             dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
     
             % Call function to save the processed data to a temporary file
-            outsideCount(i) = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map);
+            outsideCount(i) = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal);
     
             toc
     
@@ -641,7 +644,7 @@ end
 % -------------------------------------------------------------------------
 % process_density_no_symmetry_tmp
 % -------------------------------------------------------------------------
-function outsideCount = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
+function outsideCount = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -660,6 +663,9 @@ function outsideCount = process_density_no_symmetry_tmp(resolution, margin, data
     % Map the eigenvalues
     eigVals = map(eigVals);
     
+    % tolerance for ignoreReal option
+    tol = 1e-8;
+    
     for i = 1:numel(eigVals)
         
         % Get the ith eigenvalue
@@ -670,7 +676,8 @@ function outsideCount = process_density_no_symmetry_tmp(resolution, margin, data
         yVal = imag(z);
         
         % 1 =====
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
+            
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -691,7 +698,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map)
+function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -709,7 +716,10 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
     
     % Map the eigenvalues
     eigVals = map(eigVals);
-
+    
+    % tolerance for ignoreReal option
+    tol = 1e-8;
+    
     for i = 1:numel(eigVals)
 
         % Get the ith eigenvalue
@@ -720,7 +730,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         yVal = imag(z);
         
         % 1 =====
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -731,7 +741,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         
         % 2 =====
         xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -742,7 +752,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         
         % 3 =====
         yVal = yVal * -1;
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -753,7 +763,7 @@ function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFil
         
         % 4 =====
         xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -773,7 +783,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
+function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal)
     
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -799,6 +809,9 @@ function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFil
     % Get the eigenvalue condition numbers
     condVals = data.condVals;
     
+    % tolerance for ignoreReal option
+    tol = 1e-8;
+    
     % Check that the number of values in the real and imaginary files
     % are the same
     if numel(eigVals) ~= numel(condVals)
@@ -817,7 +830,7 @@ function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFil
         % Get the condition number
         cVal = condVals(i);
         
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
@@ -840,7 +853,7 @@ end
 
 
 % -------------------------------------------------------------------------
-function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map)
+function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal)
 
     % Sizes of the points
     pointWidth = (margin.right - margin.left)/resolution.width;
@@ -864,7 +877,10 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
     
     % Get the eigenvalue condition numbers
     condVals = data.condVals;
-
+    
+    % tolerance for ignoreReal option
+    tol = 1e-8;
+    
     % Check that the number of values in the real and imaginary files
     % are the same
     if numel(eigVals) ~= numel(condVals)
@@ -884,7 +900,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         cVal = condVals(i);
         
         % 1 =====
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
@@ -897,7 +913,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         
         % 2 =====
         xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             
@@ -909,7 +925,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         
         % 3 =====
         yVal = yVal * -1;
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
             
@@ -921,8 +937,7 @@ function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilena
         
         % 4 =====
         xVal = xVal * -1;
-        
-        if isInMargin(xVal, yVal, margin)
+        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             
