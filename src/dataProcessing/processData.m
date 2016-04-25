@@ -128,21 +128,13 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     % Call correct function for colorBy argument
     if strcmpi(colorBy, 'density')
         % Call the method for density
-        [mesh, totalOutsideCount] = process_density();
+        [mesh, stats] = process_density();
     elseif strcmpi(colorBy, 'cond')
         % Call the method for condition number coloring
-        [mesh, totalOutsideCount] = process_cond();
+        [mesh, stats] = process_cond();
     else
         error 'Invalid value supplied for colorBy argument'
     end
-    
-    % -------------------------
-    % Fill in the statistics struct
-    stats = struct();
-    
-    % Number of unique points
-    stats.numUniquePts = length(mesh(mesh ~= 0));
-    stats.outsideCount = totalOutsideCount;
     
     % -------------------------
     
@@ -162,28 +154,29 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
     
     % ---------------------------------------------------------------------
-    function [mesh, totalOutsideCount] = process_density()
+    function [mesh, stats] = process_density()
         if symmetry
-            [mesh, totalOutsideCount] = process_density_symmetry();
+            [mesh, stats] = process_density_symmetry();
         else
-            [mesh, totalOutsideCount] = process_density_no_symmetry();
+            [mesh, stats] = process_density_no_symmetry();
         end
     end
         
     % ---------------------------------------------------------------------
     
-    function [mesh, totalOutsideCount] = process_cond()
+    function [mesh, stats] = process_cond()
         if symmetry
-            [mesh, totalOutsideCount] = process_cond_symmetry();
+            [mesh, stats] = process_cond_symmetry();
         else
-            [mesh, totalOutsideCount] = process_cond_no_symmetry();
+            [mesh, stats] = process_cond_no_symmetry();
         end
     end
     
     % ---------------------------------------------------------------------
-    function [mesh, totalOutsideCount] = process_density_no_symmetry()
+    function [mesh, stats] = process_density_no_symmetry()
         
         totalOutsideCount = zeros(1, numFiles);
+        numUniquePts = zeros(1, numFiles);
         
         % Process all the data
         parfor i = 1:numFiles
@@ -213,21 +206,32 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
         for i = 1:numFiles
     
             f = load([processDataDir,'tmp_',num2str(i),'.mat'],'mesh');
-    
+            
             mesh = mesh + f.mesh;
+            
+            numUniquePts(i) = length(mesh(mesh ~= 0));
     
             delete([processDataDir,'tmp_',num2str(i),'.mat']);
     
         end
-    
+        
+        % -------------------------
+        % Fill in the statistics struct
+        stats = struct();
+        
+        % Number of unique points
+        stats.numUniquePts = numUniquePts;
+        stats.outsideCount = totalOutsideCount;
+        
     end
 
     
     % ---------------------------------------------------------------------
-    function [mesh, totalOutsideCount] = process_density_symmetry()
+    function [mesh, stats] = process_density_symmetry()
     
         totalOutsideCount = zeros(1, numFiles);
-    
+        numUniquePts = zeros(1, numFiles);
+        
         % Process all the data
         parfor i = 1:numFiles
     
@@ -247,7 +251,6 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
         end
         
         totalOutsideCount = sum(totalOutsideCount);
-    
         % ------------------------
     
         % Make the mesh to store the result (local to loop)
@@ -257,22 +260,33 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
         for i = 1:numFiles
     
             f = load([processDataDir, 'tmp_',num2str(i),'.mat'],'mesh');
-    
+            
             mesh = mesh + f.mesh;
+            
+            numUniquePts(i) = length(mesh(mesh ~= 0));
     
             delete([processDataDir, 'tmp_',num2str(i),'.mat']);
     
         end
-    
+        
+        % -------------------------
+        % Fill in the statistics struct
+        stats = struct();
+        
+        % Number of unique points
+        stats.numUniquePts = numUniquePts;
+        stats.outsideCount = totalOutsideCount;
+        
     end
     
     
     % =====================================================================
     % =====================================================================
     
-    function [mesh, totalOutsideCount] = process_cond_no_symmetry()
+    function [mesh, stats] = process_cond_no_symmetry()
         
         totalOutsideCount = zeros(1, numFiles);
+        numUniquePts = zeros(1, numFiles);
         
         % Process all the data
         parfor i = 1:numFiles
@@ -309,7 +323,9 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
             count = count + c.count;
             total = total + t.total;
-    
+            
+            numUniquePts(i) = length(t.total(t.total ~= 0));
+            
             delete([processDataDir,'tmp_count_',num2str(i),'.mat']);
             delete([processDataDir,'tmp_total_',num2str(i),'.mat']);
     
@@ -331,7 +347,15 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
                 end
             end
         end
-    
+        
+        % -------------------------
+        % Fill in the statistics struct
+        stats = struct();
+        
+        % Number of unique points
+        stats.numUniquePts = numUniquePts;
+        stats.outsideCount = totalOutsideCount;
+        
     end
     
     % ---------------------------------------------------------------------
@@ -341,6 +365,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
         
         totalOutsideCount = zeros(1, numFiles);
+        numUniquePts = zeros(1, numFiles);
         
         % Process all the data
         parfor i = 1:numFiles
@@ -377,6 +402,8 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
             count = count + c.count;
             total = total + t.total;
+            
+            numUniquePts(i) = length(t.total(t.total ~= 0));
     
             delete([processDataDir, 'tmp_count_',num2str(i),'.mat']);
             delete([processDataDir, 'tmp_total_',num2str(i),'.mat']);
@@ -399,6 +426,14 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
                 end
             end
         end
+        
+        % -------------------------
+        % Fill in the statistics struct
+        stats = struct();
+        
+        % Number of unique points
+        stats.numUniquePts = numUniquePts;
+        stats.outsideCount = totalOutsideCount;
     
     end
     
