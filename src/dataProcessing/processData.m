@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 25/2016                                                %
+% UPDATED ... Apr. 26/2016                                                %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and sort the eigenvalues onto the complex %
@@ -214,10 +214,10 @@ function [outputFilename, stats] = processData(workingDirIn, colorBy, options)
             mesh = mesh + f.mesh;
             
             % Count number of unique points
-            numUniquePts(i) = length(mesh(mesh ~= 0));
+            % numUniquePts(i) = length(mesh(mesh ~= 0));
             
             % Delete the temporary file
-            delete([processDataDir,'tmp_',num2str(i),'.mat']);
+            delete([processDataDir, 'tmp_', num2str(i), '.mat']);
             
         end
         
@@ -419,7 +419,7 @@ end
 function process_density_tmp(dataFilename, tmpFilename, opts)
     
     resolution = opts.resolution;
-    margin = opts.margin;
+    margin     = opts.margin;
     
     % Sizes of the points
     pointWidth  = (margin.right - margin.left)/resolution.width;
@@ -430,7 +430,7 @@ function process_density_tmp(dataFilename, tmpFilename, opts)
     
     % Load the eigenvalues
     z = parLoad(dataFilename);
-    z = z.eigVals;
+    z = z.eigVals(:);
     
     % Map the eigenvalues
     z = opts.map(z);
@@ -449,11 +449,14 @@ function process_density_tmp(dataFilename, tmpFilename, opts)
         z = z(abs(imag(z)) > tol);
     end
     
-    idx = uint32((ceil((real(z) - margin.left)/pointWidth) - 1)*resolution.height + ceil((imag(z) - margin.bottom)/pointHeight));
+    xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
+    yVal = uint32(ceil((imag(z) - margin.bottom)/pointHeight));
+    
+    idx = uint32(((xVal - 1)*resolution.height + yVal));
     
     % Count number of occurrences of each unique value
-    y = sort(idx(:));
-    p = find([true;diff(y)~=0;true]);
+    y = sort(idx);
+    p = find([true; diff(y)~=0; true]);
     values = y(p(1:end-1));
     instances = diff(p);
     

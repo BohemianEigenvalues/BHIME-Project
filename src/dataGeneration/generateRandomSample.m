@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 22/2016                                                %
+% UPDATED ... Apr. 26/2016                                                %
 %                                                                         %
 % This function will generate .mat files containing the eigenvalues and   %
 % their respective condition numbers for a sample of matrices. The        %
@@ -63,7 +63,7 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function generateRandomSample(generator, workingDir, options)
+function generateRandomSample(generator, workingDirIn, options)
     
     narginchk(2,3);
     
@@ -77,11 +77,12 @@ function generateRandomSample(generator, workingDir, options)
     end
     
     % Make Data directory if it doesn't exist
-    if workingDir(end) == filesep
-        dataDir = [workingDir, 'Data', filesep];
+    if workingDirIn(end) ~= filesep
+        workingDir = [workingDirIn, filesep];
     else
-        dataDir = [workingDir, filesep, 'Data', filesep];
+        workingDir = workingDirIn;
     end
+    dataDir = [workingDir, 'Data', filesep];
     mkdir_if_not_exist(dataDir);
     
     % Determine matrix size
@@ -103,8 +104,11 @@ function generateRandomSample(generator, workingDir, options)
         matricesPerFile = floor(1e6/matrixSize);
     end
     
+    % Check for a parameters.mat file
+    checkForParametersFile(dataDir, generator, matrixSize, opts);
+    
     % Write a readme file
-    writeReadMe();
+    writeReadMe(dataDir, generator, matrixSize, opts)
     
     % Set random seed based on the current time 
     s = RandStream('mt19937ar', 'Seed', mod(int64(now*1e6), 2^32));
@@ -209,22 +213,6 @@ function generateRandomSample(generator, workingDir, options)
     
     
     % ------------------------------------------------------------------- %
-    % writeReadMe                                                         %
-    %                                                                     %
-    % Write a readme file in the dataDir with information about when      %
-    % the data was created, what was used to create the data, etc.        %
-    % ------------------------------------------------------------------- %
-    function writeReadMe()
-        file = fopen([dataDir, 'README.txt'], 'w');
-        fprintf(file, ['Last Update: ',datestr(now,'mmmm dd/yyyy HH:MM:SS AM'),'\n\n']);
-        fprintf(file, ['Each file contains data about the eigenvalues and condition numbers w.r.t. eigenvalues for ', num2str(matricesPerFile), ' random ', num2str(matrixSize), 'x', num2str(matrixSize)]);
-        fprintf(file, [' matrices where the random matrices are sampled from the ', func2str(generator), ' function handle\n']);
-        fprintf(file, [filenamePrefix, '_*[0-9].mat ........ All eigenvalues and corresponding condition numbers (each file contains ', num2str(matricesPerFile*matrixSize), ' lines)\n']);
-        fclose(file);
-    end
-    
-    
-    % ------------------------------------------------------------------- %
     % getStartFileIndex                                                   %
     %                                                                     %
     % Determine the index of the last file created.                       %
@@ -269,3 +257,180 @@ function generateRandomSample(generator, workingDir, options)
     end
     
 end
+
+
+% ----------------------------------------------------------------------- %
+% checkForParametersFile                                                  %
+%                                                                         %
+% Check if a parameters file exists, if it doesn't, create on. If it does %
+% verify that the parameters for this call of the function match what is  %
+% in the parameters.mat file. If they don't match give the user the       %
+% option to abort or overwrite all previous data.                         %
+%                                                                         %
+% INPUT                                                                   %
+%   dataDir ...... Directory with data                                    %
+%   generator .... Matrix generator function handle                       %
+%   matrixSize ... Size of the matrices that are generated                %
+%   opts ......... The option struct                                      %
+% ----------------------------------------------------------------------- %
+function checkForParametersFile(dataDir, generator, matrixSize, opts)
+    
+    % Check if parameters.mat file exists
+    if exist([dataDir, 'parameters.mat']) == 2
+        
+        % Verify all parameters match
+        match = checkParametersFile(dataDir, generator, matrixSize, opts);
+        
+        if ~match
+            str = '';
+            while ~(strcmp(str, 'yes') || strcmp(str, 'no'))
+                str = input('Would you like overwrite all old data(yes/no): ', 's');
+            end
+            
+            if strcmp(str, 'yes')
+                % Delete all old data files
+                delete([dataDir, '*.mat']);
+                delete([dataDir, '*.txt']); 
+               
+                % Write a paramters.mat file
+                writeParametersFile(dataDir, generator, matrixSize, opts);
+            else
+                error('Cannot create data with different parameters.');
+            end
+            
+        end
+        
+    else
+        % Write a paramters.mat file
+        writeParametersFile(dataDir, generator, matrixSize, opts);
+    end
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% writeParametersFile                                                     %
+%                                                                         %
+% Write a file parameters.mat in the data directory that contains the     %
+% values of several parameters specific to the data:                      %
+%   generator ......... Function handle used to generate random matrices  %
+%   matrixSize ........ Size of the matrices that are generated           %
+%   filenamePrefix .... Prefix for the data files                         %
+%   matricesPerFile ... Number of matrices eigenvalues in each file       %
+%   computeCond ....... Were condition numbers computed?                  %
+%                                                                         %
+% INPUT                                                                   %
+%   dataDir ...... Directory with data                                    %
+%   generator .... Matrix generator function handle                       %
+%   matrixSize ... Size of the matrices that are generated                %
+%   opts ......... The option struct                                      %
+% ----------------------------------------------------------------------- %
+function writeParametersFile(dataDir, generator, matrixSize, opts)
+    
+    filenamePrefix = opts.filenamePrefix;
+    matricesPerFile = opts.matricesPerFile;
+    computeCond = opts.computeCond;
+    
+    save([dataDir, 'parameters.mat'], ...
+         'generator', ...
+         'matrixSize', ...
+         'filenamePrefix', ...
+         'matricesPerFile', ...
+         'computeCond');
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% checkParametersFile                                                     %
+%                                                                         %
+% Check if the values in the paramters.mat file match the values used in  %
+% this call to the generateRandomSample function.                         %
+%                                                                         %
+% INPUT                                                                   %
+%   dataDir ...... Directory with data                                    %
+%   generator .... Matrix generator function handle                       %
+%   matrixSize ... Size of the matrices that are generated                %
+%   opts ......... The option struct                                      %
+% ----------------------------------------------------------------------- %
+function b = checkParametersFile(dataDir, generator, matrixSize, opts)
+    
+    % Load the file
+    f = load([dataDir, 'parameters.mat']);
+    
+    b = true;
+    
+    % Check filenamePrefix
+    if ~strcmp(f.filenamePrefix, opts.filenamePrefix)
+        fprintf('filenamePrefix does not match\n');
+        b = false;
+    end
+    
+    % Check matricesPerFile
+    if f.matricesPerFile ~= opts.matricesPerFile
+        fprintf('matricesPerFile does not match\n');
+        b = false;
+    end
+    
+    % Check computeCond
+    if f.computeCond ~= opts.computeCond
+        fprintf('computeCond does not match\n');
+        b = false;
+    end
+    
+    % Check generator
+    if ~strcmp(f.generator, generator)
+        fprintf('generator does not match\n');
+        b = false;
+    end
+    
+    % Check matrixSize
+    if f.matrixSize ~= matrixSize
+        fprintf('matrixSize does not match\n');
+        b = false;
+    end
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% writeReadMe                                                             %
+%                                                                         %
+% Write a readme file in the dataDir with information about when the data %
+% was created, what was used to create the data, etc.                     %
+%                                                                         %
+% INPUT                                                                   %
+%   dataDir ...... Directory with data                                    %
+%   generator .... Matrix generator function handle                       %
+%   matrixSize ... Size of the matrices that are generated                %
+%   opts ......... The option struct                                      %
+% ----------------------------------------------------------------------- %
+function writeReadMe(dataDir, generator, matrixSize, opts)
+    
+    % Write a readme file
+    file = fopen([dataDir, 'README.txt'], 'w');
+    
+    % Date
+    fprintf(file, 'Last Updated ...... %s\n', ...
+            datestr(now,'mmmm dd/yyyy HH:MM:SS AM'));
+    
+    % matricesPerFile
+    fprintf(file, 'matricesPerFile ... %d\n', opts.matricesPerFile);
+    
+    % computeCond
+    fprintf(file, 'computeCond ....... ');
+    if opts.computeCond
+        fprintf(file, 'true\n');
+    else
+        fprintf(file, 'false\n');
+    end
+    
+    % generator
+    fprintf(file, ['generator ......... ', func2str(generator), '\n']);
+    
+    % matrixSize
+    fprintf(file, 'matrixSize ........ %d\n', matrixSize);
+    
+    fclose(file);
+end
+    
