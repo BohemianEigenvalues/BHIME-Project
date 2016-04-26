@@ -26,6 +26,7 @@
 %       computeCond ....... bool                                          %
 %       ignoreReal ........ bool                                          %
 %       ignoreRealTol ..... double                                        %
+%       colorByCond ....... bool                                          %
 %                                                                         %
 % TO DO                                                                   %
 %   - Add type checking for options                                       %
@@ -71,7 +72,8 @@ function opts = processOptions(options)
                       'backgroundColor', 'backgroundColor', ...
                           'computeCond', 'computeCond', ...
                            'ignoreReal', 'ignoreReal', ...
-                        'ignoreRealTol', 'ignoreRealTol');
+                        'ignoreRealTol', 'ignoreRealTol', ...
+                          'colorByCond', 'colorByCond');
     
     fnames = fieldnames(options);
     
@@ -101,6 +103,7 @@ function opts = processOptions(options)
     opts.computeCond          = true;
     opts.ignoreReal           = false;
     opts.ignoreRealTol        = 1e-8;
+    opts.colorByCond          = false;
     
     % startFileIndex -------------------
     if isfield(options, optNames.startFileIndex)
@@ -223,6 +226,15 @@ function opts = processOptions(options)
     if isfield(options, optNames.computeCond)
         
         opts.computeCond = options.computeCond;
+        
+        % TO DO: Add type checking (bool)
+        
+    end
+    
+    % colorByCond ----------------------
+    if isfield(options, optNames.colorByCond)
+        
+        opts.colorByCond = options.colorByCond;
         
         % TO DO: Add type checking (bool)
         

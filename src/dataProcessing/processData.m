@@ -18,41 +18,47 @@
 %     containing the data while it is running.                            %
 %                                                                         %
 % INPUT                                                                   %
-%   workingDir ... (str) The directory where files should be written      %
-%   colorBy ...... Either 'density' or 'cond'                             %
+%   workingDirIn ... (str) The directory where files should be written    %
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
-%   height ........... Default = 1001 (pixels)                            %
-%                      The height (in pixels) of the grid to be used, the %
-%                      width is determined from the margin such that each %
-%                      grid point is square                               %
-%   margin ........... Default = large enough to fit all the points       %
-%                      A struct with keys:                                %
-%                           bottom, top, left, right                      %
-%                      that indicated the margins for the image           %
-%                      if more than one files is used it will only fit    %
-%                      all the data in the first file                     %
-%   dataFilePrefix ... Default = BHIME                                    %
-%                      The prefix for the .mat files that contain the     %
-%                      eigenvalues and their condition numbers            %
-%   outputFileType ... Default = mat                                      %
-%                      Type of file to be output (either mat or txt)      %
-%   symmetry ......... Default = false                                    %
-%                      If true symmetry across the real and imaginary     %
-%                      axes is used to give effectively quadrupling       %
-%                      the number of points                               %
-%   numFiles ......... Default = All files                                %
-%                      The number of files to process                     %
-%   map .............. Default = z -> z (no mapping)                      %
-%                      Map the eigenvalues by a given function handel     %
-%                      The function MUST be vectorized                    %
-%   ignoreReal ....... Default = false                                    %
-%                      Ignore any points that have zero imaginary part    %
-%   ignoreRealTol .... Default = 1e-8                                     %
-%                      The tolerance for how close the imaginary part of  %
-%                      and eigenvalue is before it is considered to be    %
-%                      a real number                                      %
+%   height ............ Default = 1001 (pixels)                           %
+%                       The height (in pixels) of the grid to be used,    %
+%                       the width is determined from the margin such that %
+%                       each grid point is square                         %
+%   margin ............ Default = large enough to fit all the points      %
+%                       A struct with keys:                               %
+%                            bottom, top, left, right                     %
+%                       that indicated the margins for the image          %
+%                       if more than one files is used it will only fit   %
+%                       all the data in the first file                    %
+%   dataFilePrefix .... Default = BHIME                                   %
+%                       The prefix for the .mat files that contain the    %
+%                       eigenvalues and their condition numbers           %
+%   outputFileType .... Default = mat                                     %
+%                       Type of file to be output (either mat or txt)     %
+%   symmetry .......... Default = false                                   %
+%                       If set to true, symmetry across the imaginary     %
+%                       axis is used to effectively double the number of  %
+%                       points. Symmetry is not used across the real axis %
+%                       because for real matrices, the eigenvalues will   %
+%                       always appear in conjugate pairs so forcing       %
+%                       symmetry would not give any new information.      %
+%   numProcessFiles ... Default = All files                               %
+%                       The number of files to process                    %
+%   map ............... Default = z -> z (no mapping)                     %
+%                       Map the eigenvalues by a given function handel    %
+%                       The function MUST be vectorized                   %
+%   ignoreReal ........ Default = false                                   %
+%                       Ignore any points that have zero imaginary part   %
+%   ignoreRealTol ..... Default = 1e-8                                    %
+%                       The tolerance for how close the imaginary part of %
+%                       and eigenvalue is before it is considered to be   %
+%                       a real number                                     %
+%   colorByCond ....... Default = false                                   %
+%                       When set to true, coloring represents the average %
+%                       eigenvalue condition number over all the data at  %
+%                       each pixel rather than coloring by density        %
 %                                                                         %
 % OUTPUT                                                                  %
 %   fname ... A string of the name of file that data is written to        %
@@ -83,7 +89,7 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function [outputFilename, stats] = processData(workingDir, colorBy, options)
+function [outputFilename, stats] = processData(workingDirIn, colorBy, options)
     
     tic
     
@@ -94,60 +100,52 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     end
     
     % Make ProcessData directory if it doesn't exist
-    if workingDir(end) == filesep
-        processDataDir = [workingDir, 'ProcessedData', filesep];
-        dataDir = [workingDir, 'Data', filesep];
+    if workingDirIn(end) ~= filesep
+        workingDir = [workingDir, filesep];
     else
-        processDataDir = [workingDir, filesep, 'ProcessedData', filesep];
-        dataDir = [workingDir, filesep, 'Data', filesep];
+        workingDir = workingDirIn;
     end
+    processDataDir = [workingDir, 'ProcessedData', filesep];
+    dataDir = [workingDir, 'Data', filesep];
     mkdir_if_not_exist(processDataDir);
     
     % Process the options
     opts = processOptions(options);
-    margin         = opts.margin;
-    dataFilePrefix = opts.filenamePrefix;
-    outputFileType = opts.outputFileType;
-    symmetry       = opts.symmetry;
-    numFiles       = opts.numProcessFiles;
-    height         = opts.height;
     
+    % Get numProcessFiles
     if ~opts.numProcessFilesIsSet
-        numFiles = getNumFiles();
-    end
-    if ~opts.marginIsSet
-        margin = getDefaultMargin();
+        opts.numProcessFiles = getnumProcessFiles(workingDir);
     end
     
-    % Get resolution
-    opts.resolution = getResolution();
-    resolution = opts.resolution;
+    % Get default margin
+    if ~opts.marginIsSet
+        opts.margin = getDefaultMargin(workingDir, opts.dataFilePrefix);
+    end
+    
+    % Get the resolution
+    opts.resolution = getResolution(opts.margin, opts.height);
     
     % Output filename
-    outputFilename = makeOutputFilename();
+    outputFilename = makeOutputFilename(processDataDir, opts);
     
     % Write readme file
-    writeReadMe();
+    writeReadMe(processDataDir, opts)
     
     % -------------------------
     
     % Call correct function for colorBy argument
-    if strcmpi(colorBy, 'density')
-        % Call the method for density
-        [mesh, stats] = process_density();
-    elseif strcmpi(colorBy, 'cond')
-        % Call the method for condition number coloring
+    if opts.colorByCond
         [mesh, stats] = process_cond();
     else
-        error 'Invalid value supplied for colorBy argument'
+        [mesh, stats] = process_density();
     end
     
     % -------------------------
     
     % Write mesh to a text file
-    if strcmp(outputFileType, 'txt')
+    if strcmp(opts.outputFileType, 'txt')
         dlmwrite([processDataDir, outputFilename], mesh, 'delimiter',' ','precision',15);
-    elseif strcmp(outputFileType, 'mat')
+    elseif strcmp(opts.outputFileType, 'mat')
         save([processDataDir, outputFilename], 'mesh', 'stats');
     end
     
@@ -173,15 +171,18 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     % ---------------------------------------------------------------------
     function process_data_files_density()
         
+        numProcessFiles = opts.numProcessFiles;
+        filenamePrefix  = opts.filenamePrefix;
+        
         % Process all the data files
-        parfor i = 1:numFiles
+        parfor i = 1:numProcessFiles
             
-            fprintf('File %d of %d\n', i, numFiles);
+            fprintf('File %d of %d\n', i, numProcessFiles);
             
             tmpFilename  = [processDataDir, ...
                             'tmp_', num2str(i), '.mat'];
             
-            dataFilename = [dataDir, dataFilePrefix, ...
+            dataFilename = [dataDir, filenamePrefix, ...
                             '_', num2str(i), '.mat'];
             
             % Call function to save the processed data to a temporary file
@@ -194,14 +195,17 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     % ---------------------------------------------------------------------
     function [mesh, stats] = total_tmp_files_density()
         
+        resolution      = opts.resolution;
+        numProcessFiles = opts.numProcessFiles;
+        
         % Make the mesh to store the result
         mesh = uint32(zeros(resolution.height, resolution.width));
         
         % Vector to store number of unique points
-        numUniquePts = zeros(1, numFiles);
+        numUniquePts = zeros(1, numProcessFiles);
         
         % Read all temprary files and combine
-        for i = 1:numFiles
+        for i = 1:numProcessFiles
             
             % Get the mesh from the temporary
             f = load([processDataDir, 'tmp_', num2str(i), '.mat'], 'mesh');
@@ -244,9 +248,9 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     function process_data_files_cond()
         
         % Process all the data files
-        parfor i = 1:numFiles
+        parfor i = 1:numProcessFiles
             
-            fprintf('File %d of %d\n', i, numFiles);
+            fprintf('File %d of %d\n', i, numProcessFiles);
             
             tmpFilename_count  = [processDataDir, ...
                                   'tmp_count_', ...
@@ -277,10 +281,10 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
         mesh  =        zeros(resolution.height, resolution.width);
         
         % Vector to store number of unique points
-        numUniquePts = zeros(1, numFiles);
+        numUniquePts = zeros(1, numProcessFiles);
         
         % Read all temprary files and combine
-        for i = 1:numFiles
+        for i = 1:numProcessFiles
             
             c = load([processDataDir, ...
                       'tmp_count_', ...
@@ -325,157 +329,7 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     % =====================================================================
     
     
-    % ------------------------------------------------------------------- %
-    % getDefaultMargin                                                    %
-    %                                                                     %
-    % Determine the default margin such that all data in first file fits  %
-    % in margin                                                           %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   Margin struct                                                     %
-    % ------------------------------------------------------------------- %
-    function m = getDefaultMargin()
-        
-        % Read the first file
-        dataFilename = [workingDir, 'Data', filesep, dataFilePrefix, '_1.mat'];
-        data = parLoad(dataFilename);
-        
-        eigVals = data.eigVals;
-        
-        bottom = min(imag(eigVals(:)));
-        top    = max(imag(eigVals(:)));
-        left   = min(real(eigVals(:)));
-        right  = max(real(eigVals(:)));
-        
-        m = struct('bottom', bottom, ...
-                   'top', top, ...
-                   'left', left, ...
-                   'right', right);
-        
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % getNumFiles                                                         %
-    %                                                                     %
-    % Determine the index of the last data file                           %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   Integer, the index of thelast file in the data directory with     %
-    %   the filenamePrefix prefix.                                        %
-    % ------------------------------------------------------------------- %
-    function n = getNumFiles()
-        
-        % Data directory
-        if workingDir(end) == filesep
-            dataDir = [workingDir, 'Data', filesep];
-        else
-            dataDir = [workingDir, filesep, 'Data', filesep];
-        end
-        
-        folderInfo = dir(dataDir);
-        
-        n = 0;
-        
-        dfpLen = numel(dataFilePrefix);
-        
-        for k=1:length(folderInfo)
-            
-            filename = folderInfo(k).name;
-            [~, name, ext] = fileparts(filename);
-            
-            if ~strcmp(ext, '.mat')
-                continue
-            end
-            if numel(name) < dfpLen + 2
-                continue
-            end
-            if ~strcmp(name(1:dfpLen+1), [dataFilePrefix, '_'])
-                continue
-            end
-            
-            i = str2double(name(dfpLen+2:end));
-            
-            n = max(i, n);
-        end
-        
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % getResolution                                                       %
-    %                                                                     %
-    % Compute the resolution struct based on the height and margins.      %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A struct resolution = {'width', w, 'height', h}                   %
-    % ------------------------------------------------------------------- %
-    function resolution = getResolution()
-        
-        % Check the margins and make the resolution structure
-        if margin.bottom >= margin.top
-            error 'Bottom margin must be less than top margin';
-        end
-        if margin.left >= margin.right
-            error 'Left margin must be less than top margin';
-        end
-        
-        width = getWidth();
-        
-        resolution = struct('width', width, 'height', height);
-        
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % getWidth                                                            %
-    %                                                                     %
-    % Compute the width (in px) based on the height and the margins such  %
-    % that each grid point is a square                                    %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A struct resolution = {'width', w, 'height', h}                   %
-    % ------------------------------------------------------------------- %
-    function width = getWidth()
-        heightI = margin.top - margin.bottom;
-        widthI = margin.right - margin.left;
-        width = floor(widthI*height/heightI);
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % outputFilename                                                      %
-    %                                                                     %
-    % Determine the name of the output file.                              %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A string of the form                                              %
-    %   {dataFilePrefix}-{width}x{height}-{colorBy}-{symmetry}            %
-    % ------------------------------------------------------------------- %
-    function outputFilename = makeOutputFilename()
-        
-        outPrefix = [dataFilePrefix, '-', num2str(resolution.width), 'x', num2str(resolution.height), '-', regexprep(colorBy,'(\<[a-z])','${upper($1)}')];
-    
-        if symmetry
-            outPrefix = [outPrefix, '-sym-', num2str(numFiles)];
-        else
-            outPrefix = [outPrefix, '-', num2str(numFiles)];
-        end
-    
-    
-        if exist([processDataDir, outPrefix, '.', outputFileType]) == 2
-            outPrefix = [outPrefix, '-'];
-    
-            i = 2;
-            while exist([processDataDir, outPrefix , num2str(i), '.', outputFileType]) == 2
-                i = i + 1;
-            end
-            outputFilename = [outPrefix, num2str(i), '.'];
-        else
-            outputFilename = [outPrefix, '.'];
-        end
-        outputFilename = [outputFilename, outputFileType];
-    end
+
     
     
     % ------------------------------------------------------------------- %
@@ -484,30 +338,73 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     % Write a readme file in the processDataDir with information about    %
     % when the data was created, what was used to create the data, etc.   %
     % ------------------------------------------------------------------- %
-    function writeReadMe()
+    function writeReadMe(processDataDir, opts)
         
-        file = fopen([processDataDir, 'README.txt'], 'a');
+        % Get the options
+        margin          = opts.margin;
+        map             = opts.map;
+        resolution      = opts.resolution;
+        symmetry        = opts.symmetry;
+        colorByCond     = opts.colorByCond;
+        numProcessFiles = opts.numProcessFiles;
+        ignoreReal      = opts.ignoreReal;
+        ignoreRealTol   = opts.ignoreRealTol;
         
-        fprintf(file, ['Last Update: ',datestr(now,'mmmm dd/yyyy HH:MM:SS AM'),'\n\n']);
+        % Write a readme file
+        file = fopen([processDataDir, 'README.txt'],'a');
+        
+        % File name
         fprintf(file, [outputFilename, '\n']);
-        fprintf(file, ['\tViewed on [', num2str(margin.left)]);
-        if margin.bottom >= 0
-            fprintf(file, '+');
-        end
-        fprintf(file, [num2str(margin.bottom), 'i, ', num2str(margin.right)]);
-        if margin.top >= 0
-            fprintf(file, '+');
-        end
-        fprintf(file, num2str(margin.top));
-        fprintf(file, 'i]\n\n');
         
-        if strcmpi(colorBy,'density')
-            fprintf(file, '\tPlotted by density\n\n');
-        elseif strcmpi(colorBy, 'cond')
-            fprintf(file, '\tPlotted by eigenvalue condition number\n\n');
+        % Date
+        fprintf(file, '    Created ............. %s\n', ...
+                       datestr(now,'mmmm dd/yyyy HH:MM:SS AM'));
+        
+        % Margin
+        fprintf(file, '    margin .............. bottom: %.5f\n', ...
+                       margin.bottom);
+        fprintf(file, '                             top: %.5f\n', ...
+                       margin.top);
+        fprintf(file, '                            left: %.5f\n', ...
+                       margin.left);
+        fprintf(file, '                           right: %.5f\n', ...
+                       margin.right);
+                       
+        % Map
+        fprintf(file, '    map ................. %s\n', func2str(map));
+        
+        % Resolution
+        fprintf(file, '    resolution .......... %d x %d\n', ...
+                       resolution.width, resolution.height);
+        
+        % Symmetry
+        fprintf(file, '      symmetry .......... ');
+        if symmetry
+            fprintf(file, 'true\n');
+        else
+            fprintf(file, 'false\n');
         end
         
-        fprintf(file, ['\t', num2str(resolution.width), 'x', num2str(resolution.height), ' pixel grid']);
+        % colorByCond
+        fprintf(file,  '       colorByCond ...... ');
+        if colorByCond
+            fprintf(file, 'true\n');
+        else
+            fprintf(file, 'false\n');
+        end
+        
+        % numProcessFiles
+        fprintf(file, '      numProcessFiles ... %d\n', numProcessFiles);
+        
+        % ignoreReal
+        fprintf(file, '      ignoreReal ......... ');
+        if ignoreReal
+            fprintf(file, 'true\n');
+            fprintf(file, '      ignoreRealTol ...... %.5E\n', ...
+                           ignoreRealTol);
+        else
+            fprintf(file, 'false\n');
+        end
         
         fprintf(file, '\n\n\n');
         fclose(file);
@@ -573,7 +470,6 @@ end
 function process_cond_tmp(dataFilename, tmpFilename_count,  tmpFilename_total, opts)
 end
 %{
-    
     resolution = opts.resolution;
     margin = opts.margin;
     
@@ -604,21 +500,29 @@ end
         condVals = [condVals, condVals];
     end
     
-    z = z(isInMargin(real(z), imag(z), margin));
-    condVals = condVals(isInMargin(real(z), imag(z), margin));
+    valid = isInMargin(real(z), imag(z), margin);
+    
+    z = z(valid);
+    condVals = condVals(valid);
     
     if opts.ignoreReal
-        z = z(abs(imag(z)) > tol);
-        condVals = condVals(abs(imag(z)) > tol);
+        valid = abs(imag(z)) > tol;
+        z = z(valid);
+        condVals = condVals(valid);
     end
     
     idx = uint32((ceil((real(z) - margin.left)/pointWidth) - 1)*resolution.height + ceil((imag(z) - margin.bottom)/pointHeight));
     
     % Count number of occurrences of each unique value
-    y = sort(idx(:));
+    [y, I] = sort(idx(:));
+    condVals = condVals(I);
     p = find([true;diff(y)~=0;true]);
     values = y(p(1:end-1));
     instances = diff(p);
+    
+    count(values) = count(values) + uint32(instances);
+    total(values) = total(values) + condVals(instances)
+    
     
     if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
@@ -639,6 +543,7 @@ end
 end
 %}
 
+
 % -------------------------------------------------------------------------
 function b = isInMargin(x, y, margin)
     
@@ -656,7 +561,7 @@ end
 
 % -------------------------------------------------------------------------
 % Use in place of save in a parfor loop
-function parSave(fname,numvars,varargin)
+function parSave(fname, numvars, varargin)
     for i = 1:numvars
        eval([inputname(i+2),' = varargin{i};']);  
     end
@@ -664,4 +569,168 @@ function parSave(fname,numvars,varargin)
     for i = 2:numvars    
         save('-mat',fname,inputname(i+2),'-append');
     end
+end
+
+
+% ----------------------------------------------------------------------- %
+% getnumProcessFiles                                                      %
+%                                                                         %
+% Determine the index of the last data file                               %
+%                                                                         %
+% OUTPUT                                                                  %
+%   Integer, the index of thelast file in the data directory with         %
+%   the filenamePrefix prefix.                                            %
+% ----------------------------------------------------------------------- %
+function n = getnumProcessFiles(workingDir)
+    
+    % Data directory
+    if workingDir(end) == filesep
+        dataDir = [workingDir, 'Data', filesep];
+    else
+        dataDir = [workingDir, filesep, 'Data', filesep];
+    end
+    
+    folderInfo = dir(dataDir);
+    
+    n = 0;
+    
+    dfpLen = numel(dataFilePrefix);
+    
+    for k=1:length(folderInfo)
+        
+        filename = folderInfo(k).name;
+        [~, name, ext] = fileparts(filename);
+        
+        if ~strcmp(ext, '.mat')
+            continue
+        end
+        if numel(name) < dfpLen + 2
+            continue
+        end
+        if ~strcmp(name(1:dfpLen+1), [dataFilePrefix, '_'])
+            continue
+        end
+        
+        i = str2double(name(dfpLen+2:end));
+        
+        n = max(i, n);
+    end
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% getDefaultMargin                                                        %
+%                                                                         %
+% Determine the default margin such that all data in first file fits      %
+% in margin                                                               %
+%                                                                         %
+% OUTPUT                                                                  %
+%   Margin struct                                                         %
+% ----------------------------------------------------------------------- %
+function m = getDefaultMargin(workingDir, dataFilePrefix)
+    
+    % Read the first file
+    dataFilename = [workingDir, 'Data', filesep, dataFilePrefix, '_1.mat'];
+    data = parLoad(dataFilename);
+    
+    eigVals = data.eigVals;
+    
+    bottom = min(imag(eigVals(:)));
+    top    = max(imag(eigVals(:)));
+    left   = min(real(eigVals(:)));
+    right  = max(real(eigVals(:)));
+    
+    m = struct('bottom', bottom, ...
+               'top', top, ...
+               'left', left, ...
+               'right', right);
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% outputFilename                                                          %
+%                                                                         %
+% Determine the name of the output file.                                  %
+%                                                                         %
+% OUTPUT                                                                  %
+%   A string of the form                                                  %
+%   {dataFilePrefix}-{width}x{height}-{colorBy}-{symmetry}                %
+% ----------------------------------------------------------------------- %
+function outputFilename = makeOutputFilename(processDataDir, opts)
+    
+    resolution      = opts.resolution;
+    filenamePrefix  = opts.filenamePrefix;
+    colorByCond     = opts.colorByCond;
+    numProcessFiles = opts.numProcessFiles;
+    outputFileType  = opts.outputFileType;
+    symmetry        = opts.symmetry;
+    
+    outPrefix = [filenamePrefix, '-', ...
+                 num2str(resolution.width), 'x', ...
+                 num2str(resolution.height)];
+    if colorByCond
+        outPrefix = [outPrefix, '-Cond'];
+    end
+    
+    if symmetry
+        outPrefix = [outPrefix, '-sym-', num2str(numProcessFiles)];
+    else
+        outPrefix = [outPrefix, '-', num2str(numProcessFiles)];
+    end
+
+    if exist([processDataDir, outPrefix, '.', outputFileType]) == 2
+        outPrefix = [outPrefix, '-'];
+
+        i = 2;
+        while exist([processDataDir, outPrefix , num2str(i), '.', outputFileType]) == 2
+            i = i + 1;
+        end
+        outputFilename = [outPrefix, num2str(i), '.'];
+    else
+        outputFilename = [outPrefix, '.'];
+    end
+    outputFilename = [outputFilename, outputFileType];
+end
+
+
+% ----------------------------------------------------------------------- %
+% getResolution                                                           %
+%                                                                         %
+% Compute the resolution struct based on the height and margins.          %
+%                                                                         %
+% OUTPUT                                                                  %
+%   A struct resolution = {'width', w, 'height', h}                       %
+% ----------------------------------------------------------------------- %
+function resolution = getResolution(margin, height)
+    
+    % Check the margins and make the resolution structure
+    if margin.bottom >= margin.top
+        error 'Bottom margin must be less than top margin';
+    end
+    if margin.left >= margin.right
+        error 'Left margin must be less than top margin';
+    end
+    
+    width = getWidth(margin, height);
+    
+    resolution = struct('width', width, 'height', height);
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% getWidth                                                                %
+%                                                                         %
+% Compute the width (in px) based on the height and the margins such      %
+% that each grid point is a square                                        %
+%                                                                         %
+% OUTPUT                                                                  %
+%   A struct resolution = {'width', w, 'height', h}                       %
+% ----------------------------------------------------------------------- %
+function width = getWidth(margin, height)
+    heightI = margin.top - margin.bottom;
+    widthI = margin.right - margin.left;
+    width = floor(widthI*height/heightI);
 end
