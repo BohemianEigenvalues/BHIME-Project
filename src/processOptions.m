@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 22/2016                                                %
+% UPDATED ... Apr. 25/2016                                                %
 %                                                                         %
 % Process the options input options struct. If an option is not in the    %
 % options struct the default value is used.                               %
@@ -25,6 +25,7 @@
 %       backgroundColor ... [double, double, double] in [0, 1]            %
 %       computeCond ....... bool                                          %
 %       ignoreReal ........ bool                                          %
+%       ignoreRealTol ..... double                                        %
 %                                                                         %
 % TO DO                                                                   %
 %   - Add type checking for options                                       %
@@ -69,7 +70,8 @@ function opts = processOptions(options)
                                   'map', 'map', ...
                       'backgroundColor', 'backgroundColor', ...
                           'computeCond', 'computeCond', ...
-                           'ignoreReal', 'ignoreReal');
+                           'ignoreReal', 'ignoreReal', ...
+                        'ignoreRealTol', 'ignoreRealTol');
     
     fnames = fieldnames(options);
     
@@ -98,6 +100,7 @@ function opts = processOptions(options)
     opts.backgroundColor      = [0, 0, 0];
     opts.computeCond          = true;
     opts.ignoreReal           = false;
+    opts.ignoreRealTol        = 1e-8;
     
     % startFileIndex -------------------
     if isfield(options, optNames.startFileIndex)
@@ -231,6 +234,15 @@ function opts = processOptions(options)
         opts.ignoreReal = options.ignoreReal;
         
         % TO DO: Add type checking (bool)
+        
+    end
+    
+    % ignoreRealTol --------------------
+    if isfield(options, optNames.ignoreRealTol)
+        
+        opts.ignoreRealTol = options.ignoreRealTol;
+        
+        % TO DO: Add type checking (double between 0 and 1)
         
     end
     

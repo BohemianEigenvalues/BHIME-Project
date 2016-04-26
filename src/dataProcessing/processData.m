@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 22/2016                                                %
+% UPDATED ... Apr. 25/2016                                                %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and sort the eigenvalues onto the complex %
@@ -49,6 +49,10 @@
 %                      The function MUST be vectorized                    %
 %   ignoreReal ....... Default = false                                    %
 %                      Ignore any points that have zero imaginary part    %
+%   ignoreRealTol .... Default = 1e-8                                     %
+%                      The tolerance for how close the imaginary part of  %
+%                      and eigenvalue is before it is considered to be    %
+%                      a real number                                      %
 %                                                                         %
 % OUTPUT                                                                  %
 %   fname ... A string of the name of file that data is written to        %
@@ -107,18 +111,17 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     symmetry       = opts.symmetry;
     numFiles       = opts.numProcessFiles;
     height         = opts.height;
-    map            = opts.map;
-    ignoreReal     = opts.ignoreReal;
     
     if ~opts.numProcessFilesIsSet
         numFiles = getNumFiles();
     end
     if ~opts.marginIsSet
-        margin = getDefaultMargin()
+        margin = getDefaultMargin();
     end
     
     % Get resolution
-    resolution = getResolution();
+    opts.resolution = getResolution();
+    resolution = opts.resolution;
     
     % Output filename
     outputFilename = makeOutputFilename();
@@ -150,7 +153,6 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
     toc
     
-    
     % =====================================================================
     % FUNCTIONS
     % =====================================================================
@@ -158,195 +160,152 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
     
     % ---------------------------------------------------------------------
     function [mesh, stats] = process_density()
-        if symmetry
-            [mesh, stats] = process_density_symmetry();
-        else
-            [mesh, stats] = process_density_no_symmetry();
-        end
-    end
         
+        % Process the data files into temporary files
+        process_data_files_density();
+        
+        % Add up all the temporary files
+        [mesh, stats] = total_tmp_files_density();
+        
+    end
+    
+    
+    % ---------------------------------------------------------------------
+    function process_data_files_density()
+        
+        % Process all the data files
+        parfor i = 1:numFiles
+            
+            fprintf('File %d of %d\n', i, numFiles);
+            
+            tmpFilename  = [processDataDir, ...
+                            'tmp_', num2str(i), '.mat'];
+            
+            dataFilename = [dataDir, dataFilePrefix, ...
+                            '_', num2str(i), '.mat'];
+            
+            % Call function to save the processed data to a temporary file
+            process_density_tmp(dataFilename, tmpFilename, opts);
+        end
+        
+    end
+    
+    
+    % ---------------------------------------------------------------------
+    function [mesh, stats] = total_tmp_files_density()
+        
+        % Make the mesh to store the result
+        mesh = uint32(zeros(resolution.height, resolution.width));
+        
+        % Vector to store number of unique points
+        numUniquePts = zeros(1, numFiles);
+        
+        % Read all temprary files and combine
+        for i = 1:numFiles
+            
+            % Get the mesh from the temporary
+            f = load([processDataDir, 'tmp_', num2str(i), '.mat'], 'mesh');
+            
+            % Update cumulative mesh
+            mesh = mesh + f.mesh;
+            
+            % Count number of unique points
+            numUniquePts(i) = length(mesh(mesh ~= 0));
+            
+            % Delete the temporary file
+            delete([processDataDir,'tmp_',num2str(i),'.mat']);
+            
+        end
+        
+        % -------------------------
+        % Fill in the statistics struct
+        stats = struct();
+        
+        % Number of unique points
+        stats.numUniquePts = numUniquePts;
+        
+    end
+    
+    
     % ---------------------------------------------------------------------
     
     function [mesh, stats] = process_cond()
-        if symmetry
-            [mesh, stats] = process_cond_symmetry();
-        else
-            [mesh, stats] = process_cond_no_symmetry();
-        end
+        
+        % Process the data files into temporary files
+        process_data_files_cond();
+        
+        % Add up all the temporary files
+        [mesh, stats] = total_tmp_files_cond();
+        
     end
+    
     
     % ---------------------------------------------------------------------
-    function [mesh, stats] = process_density_no_symmetry()
+    function process_data_files_cond()
         
-        totalOutsideCount = zeros(1, numFiles);
-        numUniquePts = zeros(1, numFiles);
-        
-        % Process all the data
+        % Process all the data files
         parfor i = 1:numFiles
-    
-            tic
-    
-            disp(['file ', num2str(i), ' of ', num2str(numFiles)]);
-    
-            tmpFilename  = [processDataDir, 'tmp_',num2str(i),'.mat'];
-    
-            dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
-    
+            
+            fprintf('File %d of %d\n', i, numFiles);
+            
+            tmpFilename_count  = [processDataDir, ...
+                                  'tmp_count_', ...
+                                  num2str(i), '.mat'];
+            tmpFilename_total  = [processDataDir, ...
+                                  'tmp_total_', ...
+                                  num2str(i), '.mat'];
+            
+            dataFilename = [dataDir, dataFilePrefix, ...
+                            '_', num2str(i), '.mat'];
+            
             % Call function to save the processed data to a temporary file
-            totalOutsideCount(i) = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal);
-            toc
-    
+            process_cond_tmp(dataFilename, ...
+                             tmpFilename_count, ...
+                             tmpFilename_total, ...
+                             opts);
         end
-        
-        totalOutsideCount = sum(totalOutsideCount);
-        
-        % ------------------------
-    
-        % Make the mesh to store the result (local to loop)
-        mesh = uint32(zeros(resolution.height, resolution.width));
-    
-        % Read all temprary files and combine
-        for i = 1:numFiles
-    
-            f = load([processDataDir,'tmp_',num2str(i),'.mat'],'mesh');
-            
-            mesh = mesh + f.mesh;
-            
-            numUniquePts(i) = length(mesh(mesh ~= 0));
-    
-            delete([processDataDir,'tmp_',num2str(i),'.mat']);
-    
-        end
-        
-        % -------------------------
-        % Fill in the statistics struct
-        stats = struct();
-        
-        % Number of unique points
-        stats.numUniquePts = numUniquePts;
-        stats.outsideCount = totalOutsideCount;
         
     end
-
+    
     
     % ---------------------------------------------------------------------
-    function [mesh, stats] = process_density_symmetry()
-    
-        totalOutsideCount = zeros(1, numFiles);
-        numUniquePts = zeros(1, numFiles);
+    function [mesh, stats] = total_tmp_files_cond()
         
-        % Process all the data
-        parfor i = 1:numFiles
-    
-            tic
-    
-            disp(['file ', num2str(i), ' of ', num2str(numFiles)]);
-    
-            tmpFilename  = [processDataDir, 'tmp_',num2str(i),'.mat'];
-    
-            dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
-    
-            % Call function to save the processed data to a temporary file
-            totalOutsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal);
-    
-            toc
-    
-        end
-        
-        totalOutsideCount = sum(totalOutsideCount);
-        % ------------------------
-    
-        % Make the mesh to store the result (local to loop)
-        mesh = uint32(zeros(resolution.height, resolution.width));
-    
-        % Read all temprary files and combine
-        for i = 1:numFiles
-    
-            f = load([processDataDir, 'tmp_',num2str(i),'.mat'],'mesh');
-            
-            mesh = mesh + f.mesh;
-            
-            numUniquePts(i) = length(mesh(mesh ~= 0));
-    
-            delete([processDataDir, 'tmp_',num2str(i),'.mat']);
-    
-        end
-        
-        % -------------------------
-        % Fill in the statistics struct
-        stats = struct();
-        
-        % Number of unique points
-        stats.numUniquePts = numUniquePts;
-        stats.outsideCount = totalOutsideCount;
-        
-    end
-    
-    
-    % =====================================================================
-    % =====================================================================
-    
-    function [mesh, stats] = process_cond_no_symmetry()
-        
-        totalOutsideCount = zeros(1, numFiles);
-        numUniquePts = zeros(1, numFiles);
-        
-        % Process all the data
-        parfor i = 1:numFiles
-    
-            tic
-    
-            disp(['file ', num2str(i), ' of ', num2str(numFiles)]);
-    
-            tmpFilename_count  = [processDataDir, 'tmp_count_',num2str(i),'.mat'];
-            tmpFilename_total  = [processDataDir, 'tmp_total_',num2str(i),'.mat'];
-    
-            dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat']
-    
-            % Call function to save the processed data to a temporary file
-            totalOutsideCount(i) = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal);
-    
-            toc
-    
-        end
-        
-        totalOutsideCount = sum(totalOutsideCount);
-        
-        % ------------------------
-    
         % Make the mesh to store the result
         count = uint32(zeros(resolution.height, resolution.width));
-        total = zeros(resolution.height, resolution.width);
-    
+        total =        zeros(resolution.height, resolution.width);
+        mesh  =        zeros(resolution.height, resolution.width);
+        
+        % Vector to store number of unique points
+        numUniquePts = zeros(1, numFiles);
+        
         % Read all temprary files and combine
         for i = 1:numFiles
-    
-            c = load([processDataDir,'tmp_count_',num2str(i),'.mat'],'count');
-            t = load([processDataDir,'tmp_total_',num2str(i),'.mat'],'total');
-    
+            
+            c = load([processDataDir, ...
+                      'tmp_count_', ...
+                      num2str(i), '.mat'], 'count');
+            t = load([processDataDir, ...
+                      'tmp_total_', ...
+                      num2str(i), '.mat'], 'total');
+            
             count = count + c.count;
             total = total + t.total;
             
             numUniquePts(i) = length(t.total(t.total ~= 0));
             
-            delete([processDataDir,'tmp_count_',num2str(i),'.mat']);
-            delete([processDataDir,'tmp_total_',num2str(i),'.mat']);
-    
+            delete([processDataDir, 'tmp_count_', num2str(i), '.mat']);
+            delete([processDataDir, 'tmp_total_', num2str(i), '.mat']);
+            
         end
-    
-        % Compute the average
-        mesh = zeros(resolution.height, resolution.width);
         
-        for ii = 1:resolution.height
-            for jj = 1:resolution.width
-                if count(ii,jj) ~= 0
-                    mesh(ii, jj) = total(ii, jj)/double(count(ii, jj));
-    
-                    if mesh(ii, jj) == 0 && total(ii, jj) ~= 0
-                        disp(['underflow at (', num2str(ii), ', ', num2str(jj), ')']);
-                        mesh(ii, jj) = realmin;
-                    end
-    
+        % Compute the average
+        for i=1:numel(mesh)
+            if count(i) ~= 0
+                mesh(i) = total(i)/double(count(i));
+                
+                if mesh(i) == 0 && total(i) ~= 0
+                    mesh(i) = realmin;
                 end
             end
         end
@@ -357,90 +316,9 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
         
         % Number of unique points
         stats.numUniquePts = numUniquePts;
-        stats.outsideCount = totalOutsideCount;
         
     end
     
-    % ---------------------------------------------------------------------
-    
-    % ---------------------------------------------------------------------
-    function [mesh, totalOutsideCount] = process_cond_symmetry()
-    
-        
-        totalOutsideCount = zeros(1, numFiles);
-        numUniquePts = zeros(1, numFiles);
-        
-        % Process all the data
-        parfor i = 1:numFiles
-    
-            tic
-    
-            disp(['file ', num2str(i), ' of ', num2str(numFiles)]);
-    
-            tmpFilename_count  = [processDataDir, 'tmp_count_',num2str(i),'.mat'];
-            tmpFilename_total  = [processDataDir, 'tmp_total_',num2str(i),'.mat'];
-    
-            dataFilename = [dataDir, dataFilePrefix, '_', num2str(i), '.mat'];
-    
-            % Call function to save the processed data to a temporary file
-            outsideCount(i) = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal);
-    
-            toc
-    
-        end
-        
-        totalOutsideCount = sum(totalOutsideCount);
-        
-        % ------------------------
-    
-        % Make the mesh to store the result
-        count = uint32(zeros(resolution.height, resolution.width));
-        total = zeros(resolution.height, resolution.width);
-    
-        % Read all temprary files and combine
-        for i = 1:numFiles
-    
-            c = load([processDataDir, 'tmp_count_',num2str(i),'.mat'],'count');
-            t = load([processDataDir, 'tmp_total_',num2str(i),'.mat'],'total');
-    
-            count = count + c.count;
-            total = total + t.total;
-            
-            numUniquePts(i) = length(t.total(t.total ~= 0));
-    
-            delete([processDataDir, 'tmp_count_',num2str(i),'.mat']);
-            delete([processDataDir, 'tmp_total_',num2str(i),'.mat']);
-    
-        end
-    
-        % Compute the average
-        mesh = zeros(resolution.height, resolution.width);
-        
-        for ii = 1:resolution.height
-            for jj = 1:resolution.width
-                if count(ii,jj) ~= 0
-                    mesh(ii, jj) = total(ii, jj)/double(count(ii, jj));
-    
-                    if mesh(ii, jj) == 0 && total(ii, jj) ~= 0
-                        disp(['underflow at (', num2str(ii), ', ', num2str(jj), ')']);
-                        mesh(ii, jj) = realmin;
-                    end
-    
-                end
-            end
-        end
-        
-        % -------------------------
-        % Fill in the statistics struct
-        stats = struct();
-        
-        % Number of unique points
-        stats.numUniquePts = numUniquePts;
-        stats.outsideCount = totalOutsideCount;
-    
-    end
-    
-    % ---------------------------------------------------------------------   
     
     % =====================================================================
     % MORE FUNCTIONS
@@ -638,59 +516,53 @@ function [outputFilename, stats] = processData(workingDir, colorBy, options)
 end
 
 
-
-
-
 % -------------------------------------------------------------------------
 % process_density_no_symmetry_tmp
 % -------------------------------------------------------------------------
-function outsideCount = process_density_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal)
-
+function process_density_tmp(dataFilename, tmpFilename, opts)
+    
+    resolution = opts.resolution;
+    margin = opts.margin;
+    
     % Sizes of the points
-    pointWidth = (margin.right - margin.left)/resolution.width;
+    pointWidth  = (margin.right - margin.left)/resolution.width;
     pointHeight = (margin.top - margin.bottom)/resolution.height;
-
+    
     % Make the mesh to store the result (local to loop)
     mesh = uint32(zeros(resolution.height, resolution.width));
     
-    % Number of points outside view
-    outsideCount = uint64(0);
-
     % Load the eigenvalues
-    eigVals = parLoad(dataFilename);
-    eigVals = eigVals.eigVals;
+    z = parLoad(dataFilename);
+    z = z.eigVals;
     
     % Map the eigenvalues
-    eigVals = map(eigVals);
+    z = opts.map(z);
     
     % tolerance for ignoreReal option
-    tol = 1e-8;
+    tol = opts.ignoreRealTol;
     
-    for i = 1:numel(eigVals)
-        
-        % Get the ith eigenvalue
-        z = eigVals(i);
-        
-        % Get the real and imaginary parts
-        xVal = real(z);
-        yVal = imag(z);
-        
-        % 1 =====
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
+    % If symmetry, add reflection of values across imaginary axis
+    if opts.symmetry
+        z = [z, -conj(z)];
     end
-
-    % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
-
+    
+    z = z(isInMargin(real(z), imag(z), margin));
+    
+    if opts.ignoreReal
+        z = z(abs(imag(z)) > tol);
+    end
+    
+    idx = uint32((ceil((real(z) - margin.left)/pointWidth) - 1)*resolution.height + ceil((imag(z) - margin.bottom)/pointHeight));
+    
+    % Count number of occurrences of each unique value
+    y = sort(idx(:));
+    p = find([true;diff(y)~=0;true]);
+    values = y(p(1:end-1));
+    instances = diff(p);
+    
+    % Increment appropriate values
+    mesh(values) = mesh(values) + uint32(instances);
+    
     % Write mesh to a temporary .mat file
     parSave(tmpFilename, 1, mesh);
 
@@ -698,139 +570,57 @@ end
 
 
 % -------------------------------------------------------------------------
-function outsideCount = process_density_symmetry_tmp(resolution, margin, dataFilename, tmpFilename, map, ignoreReal)
-
+function process_cond_tmp(dataFilename, tmpFilename_count,  tmpFilename_total, opts)
+end
+%{
+    
+    resolution = opts.resolution;
+    margin = opts.margin;
+    
     % Sizes of the points
-    pointWidth = (margin.right - margin.left)/resolution.width;
+    pointWidth  = (margin.right - margin.left)/resolution.width;
     pointHeight = (margin.top - margin.bottom)/resolution.height;
-
-    % Make the mesh to store the result (local to loop)
-    mesh = uint32(zeros(resolution.height, resolution.width));
-
-    % Number of points outside view
-    outsideCount = uint64(0);
-
+    
+    % Make the mesh to store the result
+    count = uint32(zeros(resolution.height, resolution.width));
+    total = zeros(resolution.height, resolution.width);
+    
     % Load the eigenvalues
-    eigVals = parLoad(dataFilename);
-    eigVals = eigVals.eigVals;
-    
-    % Map the eigenvalues
-    eigVals = map(eigVals);
-    
-    % tolerance for ignoreReal option
-    tol = 1e-8;
-    
-    for i = 1:numel(eigVals)
-
-        % Get the ith eigenvalue
-        z = eigVals(i);
-        
-        % Get the real and imaginary parts
-        xVal = real(z);
-        yVal = imag(z);
-        
-        % 1 =====
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-        % 2 =====
-        xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-        % 3 =====
-        yVal = yVal * -1;
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-        % 4 =====
-        xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            mesh(yIdx, xIdx) = mesh(yIdx, xIdx) + 1;
-        else
-            outsideCount = outsideCount + 1;
-        end
-    end
-
-    % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
-
-    % Write mesh to a temporary .mat file
-    parSave(tmpFilename, 1, mesh);
-
-end
-
-
-% -------------------------------------------------------------------------
-function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal)
-    
-    % Sizes of the points
-    pointWidth = (margin.right - margin.left)/resolution.width;
-    pointHeight = (margin.top - margin.bottom)/resolution.height;
-    
-    % Make the mesh to store the result
-    count = uint32(zeros(resolution.height, resolution.width));
-    total = zeros(resolution.height, resolution.width);
-    
-    
-    % Number of points outside view
-    outsideCount = uint64(0);
-    
-    % Load the files
     data = parLoad(dataFilename);
-    
-    % Get the eigenvalues
-    eigVals = data.eigVals;
+    z = data.eigVals;
     
     % Map the eigenvalues
-    eigVals = map(eigVals);
+    z = opts.map(z);
     
     % Get the eigenvalue condition numbers
     condVals = data.condVals;
     
     % tolerance for ignoreReal option
-    tol = 1e-8;
+    tol = opts.ignoreRealTol;
     
-    % Check that the number of values in the real and imaginary files
-    % are the same
-    if numel(eigVals) ~= numel(condVals)
-        error 'Error, eigenvalues and condition number values do not match';
+    % If symmetry, add reflection of values across imaginary axis
+    if opts.symmetry
+        z = [z, -conj(z)];
+        condVals = [condVals, condVals];
     end
     
-    for i = 1:numel(eigVals)
-        
-        % Get the ith eigenvalue
-        z = eigVals(i);
-        
-        % Get the real and imaginary parts
-        xVal = real(z);
-        yVal = imag(z);
-        
-        % Get the condition number
-        cVal = condVals(i);
-        
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
+    z = z(isInMargin(real(z), imag(z), margin));
+    condVals = condVals(isInMargin(real(z), imag(z), margin));
+    
+    if opts.ignoreReal
+        z = z(abs(imag(z)) > tol);
+        condVals = condVals(abs(imag(z)) > tol);
+    end
+    
+    idx = uint32((ceil((real(z) - margin.left)/pointWidth) - 1)*resolution.height + ceil((imag(z) - margin.bottom)/pointHeight));
+    
+    % Count number of occurrences of each unique value
+    y = sort(idx(:));
+    p = find([true;diff(y)~=0;true]);
+    values = y(p(1:end-1));
+    instances = diff(p);
+    
+    if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
             
             xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
             yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
@@ -842,127 +632,17 @@ function outsideCount = process_cond_no_symmetry_tmp(resolution, margin, dataFil
         end
     end
     
-    % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
-    
-    % Write mesh to a temporary .mat file
-    parSave(tmpFilename_count, 1, count);
-    parSave(tmpFilename_total, 1, total);
-
-end
-
-
-% -------------------------------------------------------------------------
-function outsideCount = process_cond_symmetry_tmp(resolution, margin, dataFilename, tmpFilename_count, tmpFilename_total, map, ignoreReal)
-
-    % Sizes of the points
-    pointWidth = (margin.right - margin.left)/resolution.width;
-    pointHeight = (margin.top - margin.bottom)/resolution.height;
-
-    % Make the mesh to store the result
-    count = uint32(zeros(resolution.height, resolution.width));
-    total = zeros(resolution.height, resolution.width);
-
-    % Number of points outside view
-    outsideCount = uint64(0);
-
-    % Load the files
-    data = parLoad(dataFilename);
-    
-    % Get the eigenvalues
-    eigVals = data.eigVals;
-    
-    % Map the eigenvalues
-    eigVals = map(eigVals);
-    
-    % Get the eigenvalue condition numbers
-    condVals = data.condVals;
-    
-    % tolerance for ignoreReal option
-    tol = 1e-8;
-    
-    % Check that the number of values in the real and imaginary files
-    % are the same
-    if numel(eigVals) ~= numel(condVals)
-        error 'Error, eigenvalues and condition number values do not match';
-    end
-
-    for i = 1:numel(eigVals)
-
-        % Get the ith eigenvalue
-        z = eigVals(i);
-        
-        % Get the real and imaginary parts
-        xVal = real(z);
-        yVal = imag(z);
-        
-        % Get the condition number
-        cVal = condVals(i);
-        
-        % 1 =====
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-        % 2 =====
-        xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            
-            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-        % 3 =====
-        yVal = yVal * -1;
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-            
-            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-        % 4 =====
-        xVal = xVal * -1;
-        if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-            
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            
-            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-        else
-            outsideCount = outsideCount + 1;
-        end
-        
-    end
-    
-    % Print number of points outside view
-    fprintf('%.4f%% of points outside margins\n', outsideCount/numel(eigVals)*100);
-
     % Write mesh to a temporary .mat file
     parSave(tmpFilename_count, 1, count);
     parSave(tmpFilename_total, 1, total);
     
 end
-
+%}
 
 % -------------------------------------------------------------------------
 function b = isInMargin(x, y, margin)
     
-    b = x > margin.left && x < margin.right && y > margin.bottom && y < margin.top;
+    b = x > margin.left & x < margin.right & y > margin.bottom & y < margin.top;
     
 end
 
