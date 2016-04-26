@@ -98,7 +98,7 @@ function generateRandomSample(generator, workingDirIn, options)
     computeCond     = opts.computeCond;
     
     if ~opts.startFileIndexIsSet
-        startFileIndex = getStartFileIndex();
+        startFileIndex = getStartFileIndex(dataDir, filenamePrefix)
     end
     if ~opts.matricesPerFileIsSet
         matricesPerFile = floor(1e6/matrixSize);
@@ -208,51 +208,6 @@ function generateRandomSample(generator, workingDirIn, options)
             eigVals(i, :) = single(eig(generator()));
             
         end
-        
-    end
-    
-    
-    % ------------------------------------------------------------------- %
-    % getStartFileIndex                                                   %
-    %                                                                     %
-    % Determine the index of the last file created.                       %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   Integer, one more than the last file in the data directory with   %
-    %   the filenamePrefix prefix.                                        %
-    %                                                                     %
-    % TO DO                                                               %
-    %   Clean this up...                                                  %
-    % ------------------------------------------------------------------- %
-    function imax = getStartFileIndex()
-        folderInfo = dir(dataDir);
-        
-        imax = 0;
-        
-        fnpLen = numel(filenamePrefix);
-        
-        for k=1:length(folderInfo)
-            
-            filename = folderInfo(k).name;
-            [~, name, ext] = fileparts(filename);
-            
-            if ~strcmp(ext, '.mat')
-                continue
-            end
-            if numel(name) < fnpLen + 2
-                continue
-            end
-            if ~strcmp(name(1:fnpLen+1), [filenamePrefix, '_'])
-                continue
-            end
-            
-            i = str2double(name(fnpLen+2:end));
-            
-            imax = max(imax, i);
-        end
-        
-        % Increment by 1
-        imax = imax + 1;
         
     end
     
@@ -433,4 +388,50 @@ function writeReadMe(dataDir, generator, matrixSize, opts)
     
     fclose(file);
 end
+
+
+% ----------------------------------------------------------------------- %
+% getStartFileIndex                                                       %
+%                                                                         %
+% Determine the index of the last file created.                           %
+%                                                                         %
+% INPUT                                                                   %
+%   dataDir .......... Directory containing data files                    %
+%   filenamePrefix ... Prefix for data files                              %
+%                                                                         %
+% OUTPUT                                                                  %
+%   Integer, one more than the last file in the data directory with the   %
+%   filenamePrefix prefix.                                                %
+% ----------------------------------------------------------------------- %
+function imax = getStartFileIndex(dataDir, filenamePrefix)
     
+    folderInfo = dir(dataDir);
+    
+    imax = 0;
+    
+    fnpLen = numel(filenamePrefix);
+    
+    for k=1:length(folderInfo)
+        
+        filename = folderInfo(k).name;
+        [~, name, ext] = fileparts(filename);
+        
+        if ~strcmp(ext, '.mat')
+            continue
+        end
+        if numel(name) < fnpLen + 2
+            continue
+        end
+        if ~strcmp(name(1:fnpLen+1), [filenamePrefix, '_'])
+            continue
+        end
+        
+        i = str2double(name(fnpLen+2:end));
+        
+        imax = max(imax, i);
+    end
+    
+    % Increment by 1
+    imax = imax + 1;
+    
+end
