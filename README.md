@@ -114,7 +114,7 @@ This function will:
 workingDir = '~/ComplexSymmetric/';
 
 % Process by density
-fname = processData(workingDir, 'density');
+fname = processData(workingDir);
 
 % fname will be the name of the file containing the data
 ```
@@ -163,21 +163,23 @@ take an optional input value. It is a Matlab struct that controls several things
 | `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer. |
 | `startFileIndex` | 1 more than the highest index of the files in the data  directory, 1 if no files have been written | Only use this if you have already computed data and would like to compute more |
 | `numDataFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
-| `numProcessFiles` | Number of files in the `Data` directory | The number of data files to process |
+| `computeCond` | `true` | Set this value to false to compute only the eigenvalues. Should result in a speed improvement of roughly 6 times faster |
 | `matricesPerFile` | `1000000/matrixSize` | Control how many matrices eigenvalues/condition numbers are in each file |
+| `numProcessFiles` | Number of files in the `Data` directory | The number of data files to process |
 | `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
 | `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
 | `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
-| `symmetry` | `false` | If `true`, symmetry across the real and imaginary axes will be used to effectively quadruple the number of points |
+| `symmetry` | `false` | If `true`, symmetry across the imaginary axes will be used to effectively quadruple the number of points. Symmetry across the real axis is not used as, for real matrices, eigenvalues will always appear in complex conjugate pairs. |
 | `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
 | `backgroundColor` | `[0, 0, 0]` (black) | Set this to a vector with 3 values representing the RGB values (between 0 and 1) to change the background color of the image that is produced |
-| `computeCond` | `true` | Set this value to false to compute only the eigenvalues. Should result in a speed improvement of roughly 6 times faster |
 | `ignoreReal` | `false` | Set this value to true to ignore any values with zero imaginary part |
 | `ignoreRealTol` | `1e-8` | A complex number `z` will be considered a real values, and therefore ignored (if `ignoreReal` is `true`) if `abs(Im(z)) < ignoreRealTol` |
+| `colorByCond` | `false` | When set to `true`, the output image is colored by the average condition number at each pixel |
 
 __How to determine a good value for `matricesPerFile`__:
-Each file will use `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has.
+Each file will use `32*matrixSize*matricesPerFile` bits if the condition numbers are not computed, otherwise each file will be `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has. Ideally this value is less than `1/numCores` where `numCores` is the number of processors you are allowing the parallel computing toolbox in Matlab to use.
 By setting the `numDataFiles` option you can generate many files, each of which will contain data on `matricesPerFile` random matrices.
+With 16GB of RAM, the maximum value I use is `matricesPerFile = 1e7`.
 
 # Examples
 
@@ -196,10 +198,7 @@ generateRandomSample(g, workingDir);
 
 % Process Data -------------------
 
-% Color the image by the density of eigenvalues
-colorBy = 'density'
-
-pFilename = processData(workingDir, colorBy);
+pFilename = processData(workingDir);
 
 % Make the image ------------------
 
@@ -241,20 +240,19 @@ workingDir = '~/ComplexSymmetric/';
 
 % Set the options
 margin = struct('bottom', -4, ...
-                'top',     4, ...
-                'left',   -4, ...
-                'right',   4);
-opts = struct('numDataFiles',    10, ...
-              'matricesPerFile', 1e6, ...
-              'height',          501, ...
-              'margin',          margin);
+                   'top',  4, ...
+                  'left', -4, ...
+                 'right',  4);
+opts = struct('numDataFiles', 10, ...
+           'matricesPerFile', 1e6, ...
+                    'height', 501, ...
+                    'margin', margin);
 
 % Generate the data (may take a few minutes)
 generateRandomSample(g, workingDir, opts);
 
 % Process the data
-colorBy = 'density';
-fname = processData(workingDir, colorBy, opts);
+fname = processData(workingDir, opts);
 
 % Colormap
 T = [  0,   0,   0;
@@ -293,19 +291,18 @@ workingDir = '~/Real5x5-wide/';
 
 % Set the options
 margin = struct('bottom', -40, ...
-                'top',     40, ...
-                'left',   -50, ...
-                'right',   50);
+                   'top',  40, ...
+                  'left', -50, ...
+                 'right',  50);
 opts = struct('matricesPerFile', 1e6, ...
-              'height',          501, ...
-              'margin',          margin);
+                       'height', 501, ...
+                       'margin', margin);
 
 % Generate the data (may take a few minutes)
 generateRandomSample(g, workingDir, opts);
 
 % Process the data
-colorBy = 'density';
-fname = processData(workingDir, colorBy, opts);
+fname = processData(workingDir, opts);
 
 % Colormap
 T = [  0,   0,   0;
@@ -348,20 +345,19 @@ workingDir = '~/Given_4x4/';
 
 % Set the options
 margin = struct('bottom', -4, ...
-                'top',     4, ...
-                'left',   -4, ...
-                'right',   4);
+                   'top',  4, ...
+                  'left', -4, ...
+                 'right',  4);
 opts = struct('matricesPerFile', 1e6, ...
-              'height',          501, ...
-              'margin',          margin, ...
+                       'height', 501, ...
+                       'margin', margin, ...
               'backgroundColor', [1, 1, 1]);
 
 % Generate the data (may take a few minutes)
 generateRandomSample(g, workingDir, opts);
 
 % Process the data
-colorBy = 'density';
-fname = processData(workingDir, colorBy, opts);
+fname = processData(workingDir, opts);
 
 % Purple gradient
 T = [225, 128, 200;
@@ -374,7 +370,7 @@ processImage(workingDir, fname, T, x, opts);
 produces the image:
 
 <p align="center">
-    <img alt="4x4 matrix with 2 uniformly sampled enties." src="https://s3.amazonaws.com/stevenethornton.github/Given_4x4.png"/>
+    <img alt="4x4 matrix with 2 uniformly sampled entries." src="https://s3.amazonaws.com/stevenethornton.github/Given_4x4.png"/>
 </p>
 
 
@@ -382,4 +378,4 @@ produces the image:
 # To Do
 
 - Add method for automatic colormap weights
-- Clean up `processImage` function
+- Get the condition number coloring in `processData` working
