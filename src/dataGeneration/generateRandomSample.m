@@ -128,9 +128,11 @@ function generateRandomSample(generator, workingDirIn, options)
         fprintf('\n%d of %d\n', k, endFileIndex);
         
         if computeCond
-            [eigVals, condVals] = computeEigAndCond();
+            [eigVals, condVals] = computeEigAndCond(generator, ...
+                                                    matricesPerFile, ...
+                                                    matrixSize);
         else
-            eigVals = computeEig();
+            eigVals = computeEig(generator, matricesPerFile, matrixSize);
         end
         
         % ---------------
@@ -160,54 +162,69 @@ function generateRandomSample(generator, workingDirIn, options)
     averageTime = toc/numFiles;
     fprintf('\nAverage loop time is %.3f seconds\n', averageTime);
     
+end
+
+
+% =====================================================================
+% FUNCTIONS
+% =====================================================================
+
+
+% ------------------------------------------------------------------- %
+% computeEigAndCond                                                   %
+%                                                                     %
+% Compute both the eigenvalues and their condition numbers            %
+% ------------------------------------------------------------------- %
+function [eigVals, condVals] = computeEigAndCond(generator, matricesPerFile, matrixSize)
     
-    % =====================================================================
-    % FUNCTIONS
-    % =====================================================================
+    % Vectors to store eigenvalues and condition numbers
+    eigVals  = single(zeros(matricesPerFile, matrixSize));
+    condVals = single(zeros(matricesPerFile, matrixSize));
     
-    
-    % ------------------------------------------------------------------- %
-    % computeEigAndCond                                                   %
-    %                                                                     %
-    % Compute both the eigenvalues and their condition numbers            %
-    % ------------------------------------------------------------------- %
-    function [eigVals, condVals] = computeEigAndCond()
+    parfor i=1:matricesPerFile
         
-        % Vectors to store eigenvalues and condition numbers
-        eigVals  = single(zeros(matricesPerFile, matrixSize));
-        condVals = single(zeros(matricesPerFile, matrixSize));
+        % Generator a random matrix
+        A = generator();
         
-        parfor i=1:matricesPerFile
-            
-            % Generator a random matrix
-            A = generator();
-            
-            % Compute eigenvalues and condition numbers w.r.t. eigenvalues
-            [~, D, s] = condeig(A);
-            
-            eigVals(i,:)  = single(diag(D));
-            condVals(i,:) = single(s);
-            
-        end
+        % Compute eigenvalues and condition numbers w.r.t. eigenvalues
+        [~, D, s] = condeig(A);
+        
+        eigVals(i,:)  = single(diag(D));
+        condVals(i,:) = single(s);
         
     end
     
+end
+
+
+% ------------------------------------------------------------------- %
+% computeEig                                                          %
+%                                                                     %
+% Compute only the eigenvalues                                        %
+% Looks a little weird to optimize the speed of using the parfor loop %
+% ------------------------------------------------------------------- %
+function eigVals = computeEig(generator, matricesPerFile, matrixSize)
     
-    % ------------------------------------------------------------------- %
-    % computeEig                                                          %
-    %                                                                     %
-    % Compute only the eigenvalues                                        %
-    % ------------------------------------------------------------------- %
-    function eigVals = computeEig()
-        
-        % Vectors to store eigenvalues and condition numbers
-        eigVals = single(zeros(matricesPerFile, matrixSize));
-        
-        parfor i=1:matricesPerFile
-            
-            eigVals(i, :) = single(eig(generator()));
-            
+    % Size of the inner loop, need to find optimal value for this
+    % parameter based on the matricesPerFile variable
+    % Maybe matricesPerFile/100?
+    % Maybe matricesPerFile/(numCores*10)?
+    innerLoopSize = 1e4;
+    
+    % Outer loop size
+    outerLoopSize = matricesPerFile/innerLoopSize;
+    
+    % Vectors to store eigenvalues and condition numbers
+    eigVals = single(zeros(innerLoopSize*matrixSize, outerLoopSize));
+    
+    parfor i=1:outerLoopSize
+    
+        eigValsLocal = single(zeros(innerLoopSize, matrixSize));
+        for j=1:innerLoopSize
+            eigValsLocal(j, :) = single(eig(generator()));
         end
+        
+        eigVals(:, i) = eigValsLocal(:);
         
     end
     
@@ -334,7 +351,7 @@ function b = checkParametersFile(dataDir, generator, matrixSize, opts)
     end
     
     % Check generator
-    if ~strcmp(f.generator, generator)
+    if ~strcmp(func2str(f.generator), func2str(generator))
         fprintf('generator does not match\n');
         b = false;
     end
