@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Apr. 26/2016                                                %
+% UPDATED ... May 22/2016                                                 %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and sort the eigenvalues onto the complex %
@@ -22,43 +22,64 @@
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
-%   height ............ Default = 1001 (pixels)                           %
-%                       The height (in pixels) of the grid to be used,    %
-%                       the width is determined from the margin such that %
-%                       each grid point is square                         %
-%   margin ............ Default = large enough to fit all the points      %
-%                       A struct with keys:                               %
-%                            bottom, top, left, right                     %
-%                       that indicated the margins for the image          %
-%                       if more than one files is used it will only fit   %
-%                       all the data in the first file                    %
-%   dataFilePrefix .... Default = BHIME                                   %
-%                       The prefix for the .mat files that contain the    %
-%                       eigenvalues and their condition numbers           %
-%   outputFileType .... Default = mat                                     %
-%                       Type of file to be output (either mat or txt)     %
-%   symmetry .......... Default = false                                   %
-%                       If set to true, symmetry across the imaginary     %
-%                       axis is used to effectively double the number of  %
-%                       points. Symmetry is not used across the real axis %
-%                       because for real matrices, the eigenvalues will   %
-%                       always appear in conjugate pairs so forcing       %
-%                       symmetry would not give any new information.      %
-%   numProcessFiles ... Default = All files                               %
-%                       The number of files to process                    %
-%   map ............... Default = z -> z (no mapping)                     %
-%                       Map the eigenvalues by a given function handel    %
-%                       The function MUST be vectorized                   %
-%   ignoreReal ........ Default = false                                   %
-%                       Ignore any points that have zero imaginary part   %
-%   ignoreRealTol ..... Default = 1e-8                                    %
-%                       The tolerance for how close the imaginary part of %
-%                       and eigenvalue is before it is considered to be   %
-%                       a real number                                     %
-%   colorByCond ....... Default = false                                   %
-%                       When set to true, coloring represents the average %
-%                       eigenvalue condition number over all the data at  %
-%                       each pixel rather than coloring by density        %
+%   colorByCond ................ Default = false                          %
+%                                When set to true, coloring represents    %
+%                                the average eigenvalue condition number  %
+%                                over all the data at each pixel rather   %
+%                                than coloring by density.                %
+%   filenamePrefix ............. Default = BHIME                          %
+%                                The prefix for the .mat files that       %
+%                                contain the eigenvalues and their        %
+%                                condition numbers.                       %
+%   height ..................... Default = 1001 (pixels)                  %
+%                                The height (in pixels) of the grid to be %
+%                                used,  the width is determined from the  %
+%                                margin such that each grid point is      %
+%                                square.                                  %
+%   ignoreReal ................. Default = false                          %
+%                                Ignore any points that have zero         %
+%                                imaginary part.                          %
+%   ignoreRealTol .............. Default = 1e-8                           %
+%                                The tolerance for how close the          %
+%                                imaginary part of and eigenvalue is      %
+%                                before it is considered to be a real     %
+%                                number.                                  %
+%   map ........................ Default = z -> z (no mapping)            %
+%                                Map the eigenvalues by a given function  %
+%                                handel. The function MUST be vectorized. %
+%   margin ..................... Default = large enough to fit all the    %
+%                                          points                         %
+%                                A struct with keys:                      %
+%                                    bottom, top, left, right             %
+%                                that indicated the margins for the image %
+%                                if more than one files is used it will   %
+%                                only fit all the data in the data first  %
+%                                file.                                    %
+%   numProcessFiles ............ Default = All files in data directory    %
+%                                The number of data files to process      %
+%   outputFileType ............. Default = mat                            %
+%                                Type of file to be output (either mat or %
+%                                txt)                                     %
+%   overrideDataDir ............ Default = [empty string] (not set)       %
+%                                If the data is in a directory that is    %
+%                                not workingDir/Data/ then set this to    %
+%                                the directory containing the data files. %
+%   overrideProcessedDataDir ... Default = [empty string] (not set)       %
+%                                Set this option to a non-empty string    %
+%                                indicating a directory to write the      %
+%                                processed data files to. If not set they %
+%                                will be written to the directory         %
+%                                workingDir/ProcessedData/. If the        %
+%                                directory does not exist the this        %
+%                                function will create it.                 %
+%   symmetryRe ................. Default = false                          %
+%                                If true, symmetry across the real axis   %
+%                                will be used to effectively double the   %
+%                                number of points.                        %
+%   symmetryIm ................. Default = false                          %
+%                                If true, symmetry across the imaginary   %
+%                                axis will be used to effectively double  %
+%                                the number of points.                    %
 %                                                                         %
 % OUTPUT                                                                  %
 %   fname ... A string of the name of file that data is written to        %
@@ -68,12 +89,7 @@
 %                 outsideCount ... Number of points outside the margin    %
 %                                                                         %
 % TO DO                                                                   %
-%   - Separate symmetry into symmetry across real axis and symmetry       %
-%     across imaginary axis                                               %
-%   - Add option to ignore real axis                                      %
-%   - Add option to map eigenvalues to a function (i.e. x -> 1/x)         %
-%   - Can the symmetry and non-symmetric function be combined to make the %
-%     program more compact?                                               %
+%   - Add parameters file                                                 %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -99,43 +115,55 @@ function [outputFilename, stats] = processData(workingDirIn, options)
         options = struct();
     end
     
-    % Make ProcessData directory if it doesn't exist
-    if workingDirIn(end) ~= filesep
-        workingDir = [workingDir, filesep];
-    else
-        workingDir = workingDirIn;
-    end
-    processDataDir = [workingDir, 'ProcessedData', filesep];
-    dataDir = [workingDir, 'Data', filesep];
-    mkdir_if_not_exist(processDataDir);
-    
     % Process the options
     opts = processOptions(options);
     
+    % Get the working directory
+    if workingDirIn(end) ~= filesep
+        workingDir = [workingDirIn, filesep];
+    else
+        workingDir = workingDirIn;
+    end
+    
+    % Get the Data directory
+    if opts.overrideDataDirIsSet
+        dataDir = opts.overrideDataDir;
+    else
+        dataDir = [workingDir, 'Data', filesep];
+    end
+    
+    % Get and create the ProcessData directory
+    if opts.overrideProcessedDataDirIsSet
+        processedDataDir = opts.overrideProcessedDataDir;
+    else
+        processedDataDir = [workingDir, 'ProcessedData', filesep];
+    end
+    mkdir_if_not_exist(processedDataDir);
+    
     % Get numProcessFiles
     if ~opts.numProcessFilesIsSet
-        opts.numProcessFiles = getnumProcessFiles(workingDir, opts.filenamePrefix);
+        opts.numProcessFiles = getnumProcessFiles(dataDir, opts.filenamePrefix);
     end
     
     % Get default margin
     if ~opts.marginIsSet
-        opts.margin = getDefaultMargin(workingDir, opts.filenamePrefix);
+        opts.margin = getDefaultMargin(dataDir, opts.filenamePrefix);
     end
     
     % Get the resolution
     opts.resolution = getResolution(opts.margin, opts.height);
     
     % Output filename
-    outputFilename = makeOutputFilename(processDataDir, opts);
+    outputFilename = makeOutputFilename(processedDataDir, opts);
     
     % Write readme file
-    writeReadMe(processDataDir, outputFilename, opts);
+    writeReadMe(processedDataDir, outputFilename, opts);
     
     % -------------------------
     
     % Call correct function if colorByCond is true
     if opts.colorByCond
-        error('Condition number color is not currently supported.');
+        error('Condition number coloring is not currently supported.');
         % [mesh, stats] = process_cond();
     else
         [mesh, stats] = process_density(dataDir, opts);
@@ -145,9 +173,9 @@ function [outputFilename, stats] = processData(workingDirIn, options)
     
     % Write mesh to a text file
     if strcmp(opts.outputFileType, 'txt')
-        dlmwrite([processDataDir, outputFilename], mesh, 'delimiter',' ','precision',15);
+        dlmwrite([processedDataDir, outputFilename], mesh, 'delimiter',' ','precision',15);
     elseif strcmp(opts.outputFileType, 'mat')
-        save([processDataDir, outputFilename], 'mesh', 'stats');
+        save([processedDataDir, outputFilename], 'mesh', 'stats');
     end
     
     toc
@@ -181,7 +209,7 @@ function [totalMesh, stats] = process_density(dataDir, opts)
     numProcessFiles = opts.numProcessFiles;
     
     % Make the mesh to store the result
-    totalMesh = uint32(zeros(resolution.height, resolution.width));
+    totalMesh = uint64(zeros(resolution.height, resolution.width));
     
     % Vector to store number of unique points
     numUniquePts = zeros(1, numProcessFiles);
@@ -193,7 +221,7 @@ function [totalMesh, stats] = process_density(dataDir, opts)
     % Process all the data files
     parfor i = 1:numProcessFiles
         
-        localMesh = uint32(zeros(resolution.height, resolution.width));
+        localMesh = uint64(zeros(resolution.height, resolution.width));
         
         fprintf('File %d of %d\n', i, numProcessFiles);
         
@@ -202,25 +230,64 @@ function [totalMesh, stats] = process_density(dataDir, opts)
         
         % Load the eigenvalues
         z = parLoad(dataFilename);
+        
+        % Check if there are weights for the eigenvalues
+        hasWeights = ismember('weights', fieldnames(z));
+        if hasWeights
+            weights = z.weights(:);
+        else
+            weights = 1;    % Just to make Matlab happy :/
+        end
+        
+        % Get the eigenvalues
         z = z.eigVals(:);
         
         % Map the eigenvalues
         z = opts.map(z);
         
-        % tolerance for ignoreReal option
-        tol = opts.ignoreRealTol;
-        
         % If symmetry, add reflection of values across imaginary axis
-        if opts.symmetry
-            z = [z, -conj(z)];
+        if opts.symmetryIm
+            valid = abs(imag(z)) > eps;    % Ensure points aren't doubled
+            z = [z; -conj(z(valid))];
+            
+            % Update weights
+            if hasWeights
+                weights = [weights; weights(valid)];
+            end
+            
+        end
+        if opts.symmetryRe
+            valid = abs(real(z)) > eps;    % Ensure points aren't doubled
+            z = [z; conj(z(valid))];
+            
+            % Update weights
+            if hasWeights
+                weights = [weights; weights(valid)];
+            end
+            
         end
         
         % Remove points not in margin
-        z = z(isInMargin(real(z), imag(z), margin));
+        valid = isInMargin(real(z), imag(z), margin)
+        z = z(valid);
+        
+        % Update weights
+        if hasWeights
+            weights = weights(valid);
+        end
+        
+        % tolerance for ignoreReal option
+        tol = opts.ignoreRealTol;
         
         % Ignore real points if ignoreReal option is true
         if opts.ignoreReal
-            z = z(abs(imag(z)) > tol);
+            valid = abs(imag(z)) > tol
+            z = z(valid);
+            
+            % Update weights
+            if hasWeights
+                weights = weights(valid);
+            end
         end
         
         xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
@@ -228,18 +295,20 @@ function [totalMesh, stats] = process_density(dataDir, opts)
         
         idx = uint32(((xVal - 1)*resolution.height + yVal));
         
-        % Count number of occurrences of each unique value
-        y = sort(idx);
-        p = find([true; diff(y)~=0; true]);
-        values = y(p(1:end-1));
-        instances = diff(p);
-        
-        % Increment appropriate values
-        localMesh(values) = uint32(instances);
+        if hasWeights
+            for j=1:length(weights)
+                localMesh(idx(j)) = localMesh(idx(j)) + uint64(weights(j));
+            end
+        else
+            % Count the occurences of each unique value
+            y = sort(idx);
+            p = find([true; diff(y)~=0; true]);
+            values = y(p(1:end-1));
+            instances = diff(p);
+            localMesh(values) = uint64(instances);
+        end
         
         totalMesh = totalMesh + localMesh;
-        
-        %numUniquePts(i) = length(totalMesh(totalMesh ~= 0));
         
     end
     
@@ -251,23 +320,24 @@ end
 % ------------------------------------------------------------------- %
 % writeReadMe                                                         %
 %                                                                     %
-% Write a readme file in the processDataDir with information about    %
+% Write a readme file in the processedDataDir with information about  %
 % when the data was created, what was used to create the data, etc.   %
 % ------------------------------------------------------------------- %
-function writeReadMe(processDataDir, outputFilename, opts)
+function writeReadMe(processedDataDir, outputFilename, opts)
     
     % Get the options
-    margin          = opts.margin;
-    map             = opts.map;
-    resolution      = opts.resolution;
-    symmetry        = opts.symmetry;
     colorByCond     = opts.colorByCond;
-    numProcessFiles = opts.numProcessFiles;
     ignoreReal      = opts.ignoreReal;
     ignoreRealTol   = opts.ignoreRealTol;
+    map             = opts.map;
+    margin          = opts.margin;
+    numProcessFiles = opts.numProcessFiles;
+    resolution      = opts.resolution;
+    symmetryIm      = opts.symmetryIm;
+    symmetryRe      = opts.symmetryRe;
     
     % Write a readme file
-    file = fopen([processDataDir, 'README.txt'],'a');
+    file = fopen([processedDataDir, 'README.txt'],'a');
     
     % File name
     fprintf(file, [outputFilename, '\n']);
@@ -275,6 +345,27 @@ function writeReadMe(processDataDir, outputFilename, opts)
     % Date
     fprintf(file, '    Created ............. %s\n', ...
                    datestr(now,'mmmm dd/yyyy HH:MM:SS AM'));
+    
+    % colorByCond
+    fprintf(file,  '    colorByCond ......... ');
+    if colorByCond
+        fprintf(file, 'true\n');
+    else
+        fprintf(file, 'false\n');
+    end
+    
+    % ignoreReal
+    fprintf(file, '    ignoreReal .......... ');
+    if ignoreReal
+        fprintf(file, 'true\n');
+        fprintf(file, '    ignoreRealTol ....... %.5E\n', ...
+                       ignoreRealTol);
+    else
+        fprintf(file, 'false\n');
+    end
+    
+    % Map
+    fprintf(file, '    map ................. %s\n', func2str(map));
     
     % Margin
     fprintf(file, '    margin .............. bottom: %.5f\n', ...
@@ -285,39 +376,26 @@ function writeReadMe(processDataDir, outputFilename, opts)
                    margin.left);
     fprintf(file, '                           right: %.5f\n', ...
                    margin.right);
-                   
-    % Map
-    fprintf(file, '    map ................. %s\n', func2str(map));
+    
+    % numProcessFiles
+    fprintf(file, '    numProcessFiles ..... %d\n', numProcessFiles);
     
     % Resolution
     fprintf(file, '    resolution .......... %d x %d\n', ...
                    resolution.width, resolution.height);
     
-    % Symmetry
-    fprintf(file, '    symmetry ............ ');
-    if symmetry
+    % SymmetryIm
+    fprintf(file, '    symmetryIm .......... ');
+    if symmetryIm
         fprintf(file, 'true\n');
     else
         fprintf(file, 'false\n');
     end
     
-    % colorByCond
-    fprintf(file,  '    colorByCond ......... ');
-    if colorByCond
+    % SymmetryRe
+    fprintf(file, '    symmetryRe .......... ');
+    if symmetryRe
         fprintf(file, 'true\n');
-    else
-        fprintf(file, 'false\n');
-    end
-    
-    % numProcessFiles
-    fprintf(file, '    numProcessFiles ..... %d\n', numProcessFiles);
-    
-    % ignoreReal
-    fprintf(file, '    ignoreReal .......... ');
-    if ignoreReal
-        fprintf(file, 'true\n');
-        fprintf(file, '    ignoreRealTol ....... %.5E\n', ...
-                       ignoreRealTol);
     else
         fprintf(file, 'false\n');
     end
@@ -331,58 +409,58 @@ end
 % -------------------------------------------------------------------------
 % process_density_no_symmetry_tmp
 % -------------------------------------------------------------------------
-function process_density_tmp(dataFilename, tmpFilename, opts)
-    
-    resolution = opts.resolution;
-    margin     = opts.margin;
-    
-    % Sizes of the points
-    pointWidth  = (margin.right - margin.left)/resolution.width;
-    pointHeight = (margin.top - margin.bottom)/resolution.height;
-    
-    % Make the mesh to store the result (local to loop)
-    mesh = uint32(zeros(resolution.height, resolution.width));
-    
-    % Load the eigenvalues
-    z = parLoad(dataFilename);
-    z = z.eigVals(:);
-    
-    % Map the eigenvalues
-    z = opts.map(z);
-    
-    % tolerance for ignoreReal option
-    tol = opts.ignoreRealTol;
-    
-    % If symmetry, add reflection of values across imaginary axis
-    if opts.symmetry
-        z = [z, -conj(z)];
-    end
-    
-    z = z(isInMargin(real(z), imag(z), margin));
-    
-    if opts.ignoreReal
-        z = z(abs(imag(z)) > tol);
-    end
-    
-    xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
-    yVal = uint32(ceil((imag(z) - margin.bottom)/pointHeight));
-    
-    idx = uint32(((xVal - 1)*resolution.height + yVal));
-    
-    % Count number of occurrences of each unique value
-    y = sort(idx);
-    p = find([true; diff(y)~=0; true]);
-    values = y(p(1:end-1));
-    instances = diff(p);
-    
-    % Increment appropriate values
-    %mesh(values) = mesh(values) + uint32(instances);
-    mesh(values) = uint32(instances);
-    
-    % Write mesh to a temporary .mat file
-    parSave(tmpFilename, 1, mesh);
-
-end
+%function process_density_tmp(dataFilename, tmpFilename, opts)
+%    
+%    resolution = opts.resolution;
+%    margin     = opts.margin;
+%    
+%    % Sizes of the points
+%    pointWidth  = (margin.right - margin.left)/resolution.width;
+%    pointHeight = (margin.top - margin.bottom)/resolution.height;
+%    
+%    % Make the mesh to store the result (local to loop)
+%    mesh = uint32(zeros(resolution.height, resolution.width));
+%    
+%    % Load the eigenvalues
+%    z = parLoad(dataFilename);
+%    z = z.eigVals(:);
+%    
+%    % Map the eigenvalues
+%    z = opts.map(z);
+%    
+%    % tolerance for ignoreReal option
+%    tol = opts.ignoreRealTol;
+%    
+%    % If symmetry, add reflection of values across imaginary axis
+%    if opts.symmetry
+%        z = [z, -conj(z)];
+%    end
+%    
+%    z = z(isInMargin(real(z), imag(z), margin));
+%    
+%    if opts.ignoreReal
+%        z = z(abs(imag(z)) > tol);
+%    end
+%    
+%    xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
+%    yVal = uint32(ceil((imag(z) - margin.bottom)/pointHeight));
+%    
+%    idx = uint32(((xVal - 1)*resolution.height + yVal));
+%    
+%    % Count number of occurrences of each unique value
+%    y = sort(idx);
+%    p = find([true; diff(y)~=0; true]);
+%    values = y(p(1:end-1));
+%    instances = diff(p);
+%    
+%    % Increment appropriate values
+%    %mesh(values) = mesh(values) + uint32(instances);
+%    mesh(values) = uint32(instances);
+%    
+%    % Write mesh to a temporary .mat file
+%    parSave(tmpFilename, 1, mesh);
+%
+%end
 
 
 % -------------------------------------------------------------------------
@@ -422,14 +500,7 @@ end
 %   Integer, the index of thelast file in the data directory with         %
 %   the filenamePrefix prefix.                                            %
 % ----------------------------------------------------------------------- %
-function n = getnumProcessFiles(workingDir, filenamePrefix)
-    
-    % Data directory
-    if workingDir(end) == filesep
-        dataDir = [workingDir, 'Data', filesep];
-    else
-        dataDir = [workingDir, filesep, 'Data', filesep];
-    end
+function n = getnumProcessFiles(dataDir, filenamePrefix)
     
     folderInfo = dir(dataDir);
     
@@ -469,10 +540,10 @@ end
 % OUTPUT                                                                  %
 %   Margin struct                                                         %
 % ----------------------------------------------------------------------- %
-function m = getDefaultMargin(workingDir, dataFilePrefix)
+function m = getDefaultMargin(dataDir, dataFilePrefix)
     
     % Read the first file
-    dataFilename = [workingDir, 'Data', filesep, dataFilePrefix, '_1.mat'];
+    dataFilename = [dataDir, dataFilePrefix, '_1.mat'];
     data = parLoad(dataFilename);
     
     eigVals = data.eigVals;
@@ -499,14 +570,13 @@ end
 %   A string of the form                                                  %
 %   {dataFilePrefix}-{width}x{height}-{colorBy}-{symmetry}                %
 % ----------------------------------------------------------------------- %
-function outputFilename = makeOutputFilename(processDataDir, opts)
+function outputFilename = makeOutputFilename(processedDataDir, opts)
     
     resolution      = opts.resolution;
     filenamePrefix  = opts.filenamePrefix;
     colorByCond     = opts.colorByCond;
     numProcessFiles = opts.numProcessFiles;
     outputFileType  = opts.outputFileType;
-    symmetry        = opts.symmetry;
     
     outPrefix = [filenamePrefix, '-', ...
                  num2str(resolution.width), 'x', ...
@@ -514,18 +584,12 @@ function outputFilename = makeOutputFilename(processDataDir, opts)
     if colorByCond
         outPrefix = [outPrefix, '-Cond'];
     end
-    
-    if symmetry
-        outPrefix = [outPrefix, '-sym-', num2str(numProcessFiles)];
-    else
-        outPrefix = [outPrefix, '-', num2str(numProcessFiles)];
-    end
 
-    if exist([processDataDir, outPrefix, '.', outputFileType]) == 2
+    if exist([processedDataDir, outPrefix, '.', outputFileType]) == 2
         outPrefix = [outPrefix, '-'];
 
         i = 2;
-        while exist([processDataDir, outPrefix , num2str(i), '.', outputFileType]) == 2
+        while exist([processedDataDir, outPrefix , num2str(i), '.', outputFileType]) == 2
             i = i + 1;
         end
         outputFilename = [outPrefix, num2str(i), '.'];
@@ -757,8 +821,8 @@ end
     %}
     
 % -------------------------------------------------------------------------
-function process_cond_tmp(dataFilename, tmpFilename_count,  tmpFilename_total, opts)
-end
+%function process_cond_tmp(dataFilename, tmpFilename_count,  tmpFilename_total, opts)
+%end
 %{
     resolution = opts.resolution;
     margin = opts.margin;

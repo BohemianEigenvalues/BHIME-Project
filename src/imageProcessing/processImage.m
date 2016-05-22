@@ -19,9 +19,12 @@
 % OPTIONS                                                                 %
 %   backgroundColor ... Vector with 3 elements specifying RGB values to   %
 %                       use for the background color (base 255)           %
+%   maxDensity ........ Default = highest density point in the processed data file
+%                       Maximum density for coloring the image. If any
+%                       points have a higher density, they will be set
+%                       to this value.
+%   minDensity ........ Default = lowest density point in the processed data file
 %                                                                         %
-% TO DO                                                                   %
-%   - Make work with built in color maps without jet'*255                 %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -97,7 +100,26 @@ function processImage(workingDir, processedDataFilename, cmap, x, options)
     
     % Apply the color map
     valid = isfinite(mesh); % Clean this up
-    bounds = [min(mesh(valid)) max(mesh(valid))];   % Clean this up
+    
+    % Set the maximum value
+    if opts.maxDensityIsSet
+        maxDensity = opts.maxDensity;
+        mesh(valid) = min(mesh(valid), maxDensity);
+    else
+        maxDensity = max(mesh(valid));
+    end
+    
+    % Set the minimum value
+    if opts.minDensityIsSet
+        minDensity = opts.minDensity;
+        mesh(valid) = max(mesh(valid), minDensity);
+    else
+        minDensity = min(mesh(valid));
+    end
+    
+    bounds = [minDensity, maxDensity];
+    
+    % Convert to rgb based on the color map
     rgb = double2rgb(mesh, map, bounds, backgroundColor);
     
     % Write the image to a file

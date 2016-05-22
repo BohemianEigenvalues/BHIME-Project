@@ -160,21 +160,31 @@ take an optional input value. It is a Matlab struct that controls several things
 
 | Option Name | Default | Details |
 | ----------- | ------- | ------- |
-| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer. |
-| `startFileIndex` | 1 more than the highest index of the files in the data  directory, 1 if no files have been written | Only use this if you have already computed data and would like to compute more |
-| `numDataFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices |
-| `computeCond` | `true` | Set this value to false to compute only the eigenvalues. Should result in a speed improvement of roughly 6 times faster |
-| `matricesPerFile` | `1000000/matrixSize` | Control how many matrices eigenvalues/condition numbers are in each file |
-| `numProcessFiles` | Number of files in the `Data` directory | The number of data files to process |
-| `height` | 1001 (pixels) | The height (in pixels) of the grid to be used. The width is determined from the `margin` such that each grid point is square. |
-| `margin` | Large enough to fit all the points in the first data file | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
-| `outputFileType` | `mat` | Can set to `txt` if you want the processed data written to a text file |
-| `symmetry` | `false` | If `true`, symmetry across the imaginary axes will be used to effectively quadruple the number of points. Symmetry across the real axis is not used as, for real matrices, eigenvalues will always appear in complex conjugate pairs. |
-| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
 | `backgroundColor` | `[0, 0, 0]` (black) | Set this to a vector with 3 values representing the RGB values (between 0 and 1) to change the background color of the image that is produced |
-| `ignoreReal` | `false` | Set this value to true to ignore any values with zero imaginary part |
-| `ignoreRealTol` | `1e-8` | A complex number `z` will be considered a real values, and therefore ignored (if `ignoreReal` is `true`) if `abs(Im(z)) < ignoreRealTol` |
-| `colorByCond` | `false` | When set to `true`, the output image is colored by the average condition number at each pixel |
+| `colorByCond` | `false` | When set to `true`, the colors in the output image represent the average condition number in that pixel. To use this option the condition number data must be computed. Use the `computeCond` option with the `generateRandomSample` or `generateAllMatrices` functions to compute the eigenvalues condition numbers. |
+| `computeCond` | `false` | When set to `true`, the `generateRandomSample` or `generateAllMatrices` function will compute and store the condition numbers of the eigenvalues. The functions will take roughly 6 times longer to execute when set to `true`. |
+| `dataPrecision` | `'single'` | This can be set to either `'single'` or `'double'`. This option __does not__ affect the precision the eigenvalues are computed in. Eigenvalues are __always__ computed in double precision. By setting this to `'single'` the eigenvalues will be __stored__ in single precision. That is, they will be computed in double precision and cast to single precision for storage. |
+| `filenamePrefix` | `'BHIME'` | The name that will be used when naming the data files. The names of the data files take the form: `filenamePrefix + '_' + i` where `i` is a positive integer. |
+| `height` | 1001 (pixels) | The height (in pixels) of the image to be produced. The width is determined from the `margin` such that each grid point is square. |
+| `ignoreReal` | `false` | Set this value to `true` to ignore any eigenvalues where the imaginary part of the eigenvalue is within the `ignoreRealTol` of zero. This option is used for the `processData` function. |
+| `ignoreRealData` | `false` | When this option is `true`, eigenvalues where the imaginary part is within `ignoreRealTol` of zero will not be stored in the data file. This option is used for `generateRandomSample` and `generateAllMatrices`. By setting this to `true` you can substantially reduce the size of the data files. |
+| `ignoreRealTol` | `1e-10` | A complex number `z` will be considered a real value, and therefore ignored (if `ignoreReal` or `ignoreRealData` is `true`) if `abs(Im(z)) < ignoreRealTol`. |
+| `map` | `@(z) z` (no mapping) | Map the eigenvalues by a given function handle. __Must be vectorized.__ |
+| `margin` | Large enough to fit all the data points in the first data file. | Must be a struct with keys: <ul><li>`bottom`</li><li>`top`</li><li>`left`</li><li>`right`</li></ul> that indicate the margins for the image. |
+| `matricesPerFile` | `floor(1e6/matrixSize)` | Control how many matrices eigenvalues (and condition numbers) are in each data file. |
+| `maxDensity` | 0 (i.e. not set) | Controls the maximum eigenvalue count used for coloring the image. Any point with a higher density than this this value is colored as the final color in the colormap. |
+| `minDensity` | 0 (i.e. not set) | Controls the minimum eigenvalue count used for coloring the image. Any point with a lower density than this this value is colored as the final color in the colormap. |
+| `numCharPolyFiles` | 1 | The number of characteristic polynomial (plain text files) to convert to eigenvalue data files. |
+| `numDataFiles` | 1 | Set this option to a positive integer if you would like to generate multiple files with data where each file contains the eigenvalues and their condition numbers for `matricesPerFile` random matrices. |
+| `numProcessFiles` | Number of files in the `Data` directory | The number of data files for the `processData` function to use. |
+| `outputFileType` | `'mat'` | Can set to `'txt'` if you want the processed data written to a text file. |
+| `overrideDataDir` | `''` | Set this option to a non-empty string indicating a directory to write the data files to. If not set they will be written to the directory `workingDir/Data/`. If the directory does not exist the `generateRandomSample` and `generateAllMatrices` functions will create the directory. |
+| `overrideImagesDir` | `''` | Set this option to a non-empty string indicating a directory to write the images to. If not set they will be written to the directory `workingDir/Images/`. If the directory does not exist the `processImage` function will create it. |
+| `overrideProcessedDataDir` | `''` | Set this option to a non-empty string indicating a directory to write the processed data files to. If not set they will be written to the directory `workingDir/ProcessedData/`. If the directory does not exist the `processData` function will create it. |
+| `startFileIndex` | 1 greater than the  highest index of the files in the data directory or 1 if no files have been written | Only use this if you have already computed data and would like to compute more. |
+| `storeDataWithSymmetry` | `false` | When this option is set to `true`, any values not in the upper right quadrant of the complex plane will not be stored in the output data files. That is, only values where `Im(z) >= 0` and `Re(z) >= 0` are stored. This option is used by `generateRandomSample` and `generateAllMatrices`. |
+| `symmetryIm` | `false` | If `true`, symmetry across the imaginary axis will be used to effectively double the number of points. |
+| `symmetryRe` | `false` | If `true`, symmetry across the real axis will be used to effectively double the number of points. |
 
 __How to determine a good value for `matricesPerFile`__:
 Each file will use `32*matrixSize*matricesPerFile` bits if the condition numbers are not computed, otherwise each file will be `64*matrixSize*matricesPerFile` bits, make sure this value is less than the amount of RAM your computer has. Ideally this value is less than `1/numCores` where `numCores` is the number of processors you are allowing the parallel computing toolbox in Matlab to use.
