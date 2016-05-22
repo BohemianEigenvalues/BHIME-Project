@@ -132,7 +132,7 @@ function [outputFilename, stats] = processData(workingDirIn, options)
         dataDir = [workingDir, 'Data', filesep];
     end
     
-    % Get and create the ProcessData directory
+    % Get and create the ProcessedData directory
     if opts.overrideProcessedDataDirIsSet
         processedDataDir = opts.overrideProcessedDataDir;
     else
@@ -317,12 +317,12 @@ function [totalMesh, stats] = process_density(dataDir, opts)
 end
 
 
-% ------------------------------------------------------------------- %
-% writeReadMe                                                         %
-%                                                                     %
-% Write a readme file in the processedDataDir with information about  %
-% when the data was created, what was used to create the data, etc.   %
-% ------------------------------------------------------------------- %
+% ----------------------------------------------------------------------- %
+% writeReadMe                                                             %
+%                                                                         %
+% Write a readme file in the processedDataDir with information about when %
+% the data was created, what was used to create the data, etc.            %
+% ----------------------------------------------------------------------- %
 function writeReadMe(processedDataDir, outputFilename, opts)
     
     % Get the options
