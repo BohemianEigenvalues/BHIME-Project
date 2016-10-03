@@ -211,9 +211,6 @@ function [totalMesh, stats] = process_density(dataDir, opts)
     % Make the mesh to store the result
     totalMesh = uint64(zeros(resolution.height, resolution.width));
     
-    % Vector to store number of unique points
-    numUniquePts = zeros(1, numProcessFiles);
-    
     % Sizes of the points
     pointWidth  = (margin.right - margin.left)/resolution.width;
     pointHeight = (margin.top - margin.bottom)/resolution.height;

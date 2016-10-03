@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... May 9/2016                                                  %
+% UPDATED ... Oct. 3/2016                                                 %
 %                                                                         %
 % This function will generate .mat files containing the eigenvalues and   %
 % their condition numbers (if option computeCond is true) for a sample of %
@@ -135,15 +135,11 @@ function generateRandomSample(generator, workingDirIn, options)
     
     startFileIndex  = opts.startFileIndex;
     numDataFiles    = opts.numDataFiles;
-    matricesPerFile = opts.matricesPerFile;
     filenamePrefix  = opts.filenamePrefix;
     computeCond     = opts.computeCond;
     
     if ~opts.startFileIndexIsSet
-        startFileIndex = getStartFileIndex(dataDir, filenamePrefix)
-    end
-    if ~opts.matricesPerFileIsSet
-        matricesPerFile = floor(1e6/matrixSize);
+        startFileIndex = getStartFileIndex(dataDir, filenamePrefix);
     end
     
     % Check for a parameters.mat file
@@ -218,9 +214,9 @@ end
 function [eigVals, condVals] = computeData(generator, matrixSize, opts)
     
     if nargout == 1
-        eigVals = computeEig(generator, matrixSize, opts)
+        eigVals = computeEig(generator, matrixSize, opts);
     else
-        [eigVals, condVals] = computeEigAndCond(generator, matrixSize, opts)
+        [eigVals, condVals] = computeEigAndCond(generator, matrixSize, opts);
     end
     
 end
@@ -280,7 +276,7 @@ function [eigVals, condVals] = computeEigAndCond(generator, matrixSize, opts)
     
     % ignoreRealData option
     if opts.ignoreRealData
-        valid = abs(imag(eigVals)) > opts.ignoreRealTol
+        valid = abs(imag(eigVals)) > opts.ignoreRealTol;
         eigVals  = eigVals(valid);
         condVals = condVals(valid);
         

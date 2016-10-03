@@ -285,7 +285,7 @@ function opts = processOptions(options)
     % numCharPolyFiles -----------------
     if isfield(options, optNames.numCharPolyFiles)
         
-        opts.numCharPolyFiles = options.numCharPolyFiles
+        opts.numCharPolyFiles = options.numCharPolyFiles;
         opts.numCharPolyFilesIsSet = true;
         
         % Check that numFiles is a positive integer
@@ -414,7 +414,7 @@ function opts = processOptions(options)
     end
     
     % Source: http://www.mathworks.com/matlabcentral/fileexchange/8847-dstv--datashape---type-verification/content/dstv/isstring.m
-    function b = isValidString(S);
+    function b = isValidString(S)
         % ISSTRING True for 1-D char arrays.
         %   ISSTRING(S) returns 1 if S is a string. A string is a 1-D char
         %   array and is therefore the char equivalent of a vector.

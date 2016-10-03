@@ -62,7 +62,7 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
         error('generateRandomSample:NotEnoughInputs', ...
               'requires at least 3 input arguments');
     elseif nargin == 3
-        options = struct()
+        options = struct();
     end
     
     % Check that generator is a function handle
@@ -178,8 +178,8 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
         fprintf(file, ['the ' func2str(generator), ' function handle\n']);
         fprintf(file, [filenamePrefix, '_*[0-9].mat ... All eigenvalues']);
         fprintf(file, ' and corresponding condition numbers (each file ');
-        fprintf(file, ['contains ' num2str(matricesPerFile*matrixSize)]);
-        fprintf(file, [' lines\n']);
+        fprintf(file, ['contains ', num2str(matricesPerFile*matrixSize)]);
+        fprintf(file, ' lines\n');
         fclose(file);
     end
 
@@ -229,7 +229,7 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
             matricesPerFile = options.matricesPerFile;
             
             % Check that matricesPerFile is a positive integer
-            if ~((matricesPerFile>0)&(mod(matricesPerFile,1)==0))
+            if ~((matricesPerFile>0) && (mod(matricesPerFile,1)==0))
                 error('matricesPerFile option must be a positive integer');
             end
         end
