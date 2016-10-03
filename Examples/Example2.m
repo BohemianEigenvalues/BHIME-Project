@@ -1,10 +1,10 @@
-% -------------------------------------------------------------------------
-% EXAMPLE 2 -- Eigenvalues of 5x5 matrices with entries in {-1, 0, 1}
-%
-% This example is the same as example 1 except options are used to override
-% some of the default values. See example 1 for a more detailed 
-% explaination of what each line of code is doing.
-% -------------------------------------------------------------------------
+% ----------------------------------------------------------------------- %
+% EXAMPLE 2 -- Eigenvalues of 5x5 matrices with entries in {-1, 0, 1}     %
+%                                                                         %
+% This example is the same as Example 1, except options are used to       %
+% override some of the default values. See Example 1 for a more detailed  %
+% explaination of what each line of code is doing.                        %
+% ----------------------------------------------------------------------- %
 
 % Set the working directory
 workingDir = '~/Real5x5_d3/';
@@ -28,9 +28,10 @@ options = struct('numDataFiles', 5, ...
                        'margin', margin, ...
                        'height', 2001, ...
                    'symmetryIm', true, ...
-              'backgroundColor', [1, 1, 1])
+              'backgroundColor', [1, 1, 1]);
 
-% A random sample of 5 million (numDataFiles*matricesPerFile) matrices will  % be generated and stored in 5 data files (each file will contain the 
+% A random sample of 5 million (numDataFiles*matricesPerFile) matrices will  
+% be generated and stored in 5 data files (each file will contain the 
 % eigenvalues of 1 million matrices).
 generateRandomSample(g, workingDir, options);
 
