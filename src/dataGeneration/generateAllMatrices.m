@@ -1,42 +1,72 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 11/2016                                                %
+% UPDATED ... Nov. 7/2016                                                 %
 %                                                                         %
-% This function will generate .mat files containing the eigenvalues and   %
-% their respective condition numbers for a all matrices matrices from the %
-% input generating function.                                              %
-%   - A readme file will be automatically generated when this function    %
-%     is called                                                           %
-%   - A new directory 'Data' in the input workingDir will be created      %
-%   - Files will be named BHIME_i.mat where i starts at 1 (you can        %
-%     customize the prefix by using the filenamePrefix option)            %
+% This function will generate .mat files containing the eigenvalues of    %
+% all matrices. The matrices are sampled from a user provided function.   %
+%   - A new directory 'Data' will be created in the input workingDir, or  %
+%     if the option overrideDataDir is set, this will be created and used %
+%     to store the files created by this function.                        %
+%   - A readme.txt file will be automatically generated in the data       %
+%     directory.                                                          %
+%   - A parameters.mat file will be automatically generated in the data   %
+%     directory. This will contain information about the parameter        %
+%     (option) values used when calling the function and ensures          %
+%     consistency when the more data is added to an existing directory    %
 %                                                                         %
 % INPUT                                                                   %
-%   workingDir ........ The directory where files should be written       %
-%   generator ......... A function handle that takes a positive integer   %
-%                       as input and returns a square matrix that is      %
-%                       unique for that input integer. Must always return %
-%                       a matrix of the same size.                        %
-%   numMatrices ....... The total number of unique matrices the generator %
-%                       can generate.                                     %
+%   generator ............... A function handle that takes no input and   %
+%                             returns  a random square matrix, must       %
+%                             always return a matrix of the same size.    %
+%   workingDirIn ............ The directory where files should be written %
+%   numMatrices ............. Number of matrices in the class.            %
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
-%   filenamePrefix .... Default = BHIME                                   %
-%                       The prefix for the .mat files that contain the    %
-%                       eigenvalues and their condition numbers           %
-%   matricesPerFile ... Default = floor(1e6/matrixSize)                   %
-%                       Set this value to control how many matrices       %
-%                       eigenvalues will be in each file, for larger      %
-%                       matrices a smaller value will be needed. You can  %
-%                       determine a good value based on the size of       %
-%                       matrix you're using and the amount of memory your %
-%                       computer has.                                     %
-%                          file size = memory usage =                     %
-%                             64*matrixSize*matricesPerFile bits          %
-%                             (Eigenvalues and condition numbers are      %
-%                             stored in single precision)                 %
+%   dataPrecision ........... Default = 'single'                          %
+%                             This can be set to either 'single' or       %
+%                             'double'. This option does not affect the   %
+%                             precision the eigenvalues are computed in.  %
+%                             Eigenvalues are always computed in double   %
+%                             precision. By setting this to 'single' the  %
+%                             eigenvalues will be stored in single        %
+%                             precision. That is, they will be computed   %
+%                             in double precision and cast to single      %
+%                             precision for storage.                      %
+%   filenamePrefix .......... Default = 'BHIME'                           %
+%                             The name that will be used when naming the  %
+%                             data files. The names of the data files     %
+%                             take the form: filenamePrefix + '_' + i     %
+%                             where i is a positive integer.              %
+%   ignoreRealData .......... Default = false                             %
+%                             When this option is true, eigenvalues where %
+%                             the  imaginary part is within ignoreRealTol %
+%                             of zero will not be stored in the data      %
+%                             file. By setting this to true you can       %
+%                             substantially reduce the size of the data   %
+%                             files.                                      %
+%   ignoreRealTol ........... Default = 1e-10                             %
+%                             A complex number z will be considered a     %
+%                             real value, and therefore not stored in the %
+%                             output data file (if ignoreRealData is      %
+%                             true) if abs(Im(z)) < ignoreRealTol.        %
+%   matricesPerFile ......... Default = floor(1e6/matrixSize)             %
+%                             Control how many matrices eigenvalues are   %
+%                             in each data file.                          %
+%   overrideDataDir ......... Default = [empty string] (not set)          %
+%                             Set this option to a non-empty string       %
+%                             indicating a directory to write the data    %
+%                             files to. If not set they will be written   %
+%                             to the directory workingDir/Data/. If the   %
+%                             set directory does not exist it will be     %
+%                             created.                                    %
+%   storeDataWithSymmetry ... Default = false                             %
+%                             When this option is set to true, any values %
+%                             not in the upper right quadrant of the      %
+%                             complex plane will not be stored in the     %
+%                             output data files. That is, only values     %
+%                             where Im(z) >= 0 and Re(z) >= 0 are stored. %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -52,16 +82,11 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function generateAllMatrices(workingDir, generator, numMatrices, options)
+function generateAllMatrices(generator, workingDirIn, numMatrices, options)
     
-    % Check number of input arguments
-    if nargin > 4
-        error('generateRandomSample:TooManyInputs', ...
-              'requires at most 4 input arguments');
-    elseif nargin < 3
-        error('generateRandomSample:NotEnoughInputs', ...
-              'requires at least 3 input arguments');
-    elseif nargin == 3
+    narginchk(3, 4);
+    
+    if nargin < 4
         options = struct();
     end
     
@@ -70,24 +95,32 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
         error('generator must be a function handle');
     end
     
-    % Make Data directory if it doesn't exist
-    if workingDir(end) == filesep
-        dataDir = [workingDir, 'Data', filesep];
+    % Process the options
+    opts = processOptions(options);
+    
+    % Make sure the working directory ends in the filesep
+    if workingDirIn(end) ~= filesep
+        workingDir = [workingDirIn, filesep];
     else
-        dataDir = [workingDir, filesep, 'Data', filesep];
+        workingDir = workingDirIn;
+    end
+    
+    % Set and make the data directory
+    if opts.overrideDataDirIsSet
+        dataDir = opts.overrideDataDir;
+    else
+        dataDir = [workingDir, 'Data', filesep];
     end
     mkdir_if_not_exist(dataDir);
     
     % Determine matrix size
-    matrixSize = max(size(generator(1)));
+    matrixSize = max(size(generator(0)));
     
-    % Process the options
-    opts = processOptions();
+    filenamePrefix  = opts.filenamePrefix;
     matricesPerFile = opts.matricesPerFile;
-    filenamePrefix = opts.filenamePrefix;
     
     % Write a readme file
-    writeReadMe();
+    writeReadMe(dataDir, generator, matrixSize, opts);
     
     % Set random seed based on the current time 
     s = RandStream('mt19937ar', 'Seed', mod(int64(now*1e6), 2^32));
@@ -96,52 +129,25 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
     % Master timer
     tic;
     
-    % Split into groups of size matricesPerFile
-    numOuterLoops = ceil(numMatrices/matricesPerFile);
+    % Last index for file to be written
+    endFileIndex = ceil(numMatrices/matricesPerFile);
     
-    for i=1:numOuterLoops
+    for k=1:endFileIndex
         
         % Timer 2
         t2 = tic;
         
-        fprintf('\n%d of %d\n',i,numOuterLoops);
+        fprintf('\n%d of %d\n', k, endFileIndex);
         
-        % Determine starting and ending 
-        jStart = (i-1)*matricesPerFile + 1;
-        jEnd = i*matricesPerFile;
+        eigVals = computeEig(generator, matrixSize, k, numMatrices, opts);
         
-        if jEnd > numMatrices
-            % Check if we're on the last file
-            jEnd = numMatrices;
-            matricesPerFile = jEnd - jStart + 1;
-        end
-        
-        % Vectors to store eigenvalues and condition numbers
-        eig  = single(zeros(matricesPerFile, matrixSize));
-        cond = single(zeros(matricesPerFile, matrixSize));
-        
-        parfor j=1:matricesPerFile
-        
-            % Offset counter
-            jj = jStart + j - 1;
-            
-            % Get the matrix
-            A = generator(jj);
-            
-            % Compute eigenvalues and condition numbers w.r.t. eigenvalues
-            [~, D, s] = condeig(A);
-            
-           eig(j,:)  = single(diag(D));
-           cond(j,:) = single(s);
-        
-        end
-        
-        % ---------------
         % Save the data
         generatorStr = func2str(generator);
-        filename = [dataDir, filenamePrefix, '_', num2str(i), '.mat'];
-        save(filename, 'eig', 'cond', 'matrixSize', 'generatorStr');
-        % ---------------
+        filename = [dataDir, filenamePrefix, '_', num2str(k), '.mat'];
+        
+        save(filename, 'eigVals', ...
+                       'matrixSize', ...
+                       'generatorStr');
         
         % Timing
         tElapsed = toc(t2);  % timer 2
@@ -150,98 +156,117 @@ function generateAllMatrices(workingDir, generator, numMatrices, options)
     end
     
     % Timing
-    averageTime = toc/numOuterLoops;
+    averageTime = toc/endFileIndex;
     fprintf('\nAverage loop time is %.3f seconds\n', averageTime);
     
+end
+
+
+% =====================================================================
+% FUNCTIONS
+% =====================================================================
+
+
+% ----------------------------------------------------------------------- %
+% computeEig                                                              %
+%                                                                         %
+% Compute the eigenvalues                                                 %
+% ----------------------------------------------------------------------- %
+function eigVals = computeEig(generator, matrixSize, k, numMatrices, opts)
     
-    % =====================================================================
-    % FUNCTIONS
-    % =====================================================================
+    matricesPerFile = opts.matricesPerFile;
     
+    % Determine starting and ending 
+    jStart = (k-1)*matricesPerFile + 1;
+    jEnd = k*matricesPerFile;
     
-    % ------------------------------------------------------------------- %
-    % writeReadMe                                                         %
-    %                                                                     %
-    % Write a readme file in the dataDir with information about when      %
-    % the data was created, what was used to create the data, etc.        %
-    % ------------------------------------------------------------------- %
-    function writeReadMe()
-        file = fopen([dataDir, 'README.txt'], 'w');
-        t = datestr(now, 'mmmm dd/yyyy HH:MM:SS AM');
-        fprintf(file, ['Last Update: ', t, '\n\n']);
-        fprintf(file, 'Each file contains data about the (right) ');
-        fprintf(file, 'eignenvalues and condition numbers w.r.t. the ');
-        fprintf(file, 'eigenvalues for ');
-        fprintf(file, [num2str(matricesPerFile), ' ']);
-        fprintf(file, [num2str(matrixSize), 'x', num2str(matrixSize)]);
-        fprintf(file, ' matrices where the matrices are generated from ');
-        fprintf(file, ['the ' func2str(generator), ' function handle\n']);
-        fprintf(file, [filenamePrefix, '_*[0-9].mat ... All eigenvalues']);
-        fprintf(file, ' and corresponding condition numbers (each file ');
-        fprintf(file, ['contains ', num2str(matricesPerFile*matrixSize)]);
-        fprintf(file, ' lines\n');
-        fclose(file);
+    if jEnd > numMatrices
+        % Check if we're on the last file
+        jEnd = numMatrices;
+        matricesPerFile = jEnd - jStart + 1;
+    end
+    
+    % Matrix to store eigenvalues
+    eigVals = single(zeros(matricesPerFile, matrixSize));
+    
+    parfor j=1:matricesPerFile
+    
+        % Offset counter
+        jj = jStart + j - 1;
+        
+        eigVals(j, :) = eig(generator(jj));
+    
+    end
+    
+    % Convert to a vector
+    eigVals = eigVals(:);
+    
+    % Cast to single precision if dataPrecision option is set to 'single'
+    if strcmp(opts.dataPrecision, 'single')
+        eigVals = single(eigVals);
+    end
+    
+    % Throw away real eigenvalues if ignoreRealData option is on
+    if opts.ignoreRealData
+        eigVals = eigVals(abs(imag(eigVals)) > opts.ignoreRealTol);
+    end
+    
+    % Remove values that have negative real or imaginary part
+    if opts.storeDataWithSymmetry
+        eigVals = eigVals(imag(eigVals) >= 0 & real(eigVals) >= 0);
+    end 
+    
+end
+
+
+% ----------------------------------------------------------------------- %
+% writeReadMe                                                             %
+%                                                                         %
+% Write a readme file in the dataDir with information about when the data %
+% was created, what was used to create the data, etc.                     %
+%                                                                         %
+% INPUT                                                                   %
+%   dataDir ...... Directory with data                                    %
+%   generator .... Matrix generator function handle                       %
+%   matrixSize ... Size of the matrices that are generated                %
+%   opts ......... The option struct                                      %
+% ----------------------------------------------------------------------- %
+function writeReadMe(dataDir, generator, matrixSize, opts)
+
+    % Write a readme file
+    file = fopen([dataDir, 'README.txt'], 'w');
+
+    % Date
+    fprintf(file, 'Last Updated ............ %s\n', ...
+            datestr(now,'mmmm dd/yyyy HH:MM:SS AM'));
+
+    % dataPrecision
+    fprintf(file, 'dataPrecision ........... %s\n', opts.dataPrecision);
+
+    % ignoreRealData
+    fprintf(file, 'ignoreRealData .......... ');
+    if opts.ignoreRealData
+        fprintf(file, 'true\n');
+        % ignoreRealTol
+        fprintf(file, 'ignoreRealTol ........... %.5E\n', ...
+                      opts.ignoreRealTol);
+    else
+        fprintf(file, 'false\n');
     end
 
-    
-    
-    % ------------------------------------------------------------------- %
-    % processOptions                                                      %
-    %                                                                     %
-    % Process the options input options struct. If an option is not in    %
-    % the options struct the default value is used.                       %
-    %                                                                     %
-    % INPUT                                                               %
-    %   options ... (struct) contains keys corresponding to the options   %
-    %                                                                     %
-    % OUTPUT                                                              %
-    %   A struct opts with keys                                           %
-    %       matricesPerFile                                               %
-    %       filenamePrefix                                                %
-    %                                                                     %
-    % TO DO                                                               %
-    %   - Add type checking for options                                   %
-    % ------------------------------------------------------------------- %
-    function opts = processOptions()
-        
-        % Check that options is a struct
-        if ~isstruct(options)
-            error('processData:InvalidOptionsStruct', ...
-                  'options argument must be a structured array');
-        end
-        
-        fnames = fieldnames(options);
-        
-        optionNames = struct('matricesPerFile', 'matricesPerFile', ...
-                             'filenamePrefix', 'filenamePrefix');
-        
-        if ~all(ismember(fnames, fieldnames(optionNames)))
-            error('processData:InvalidOption',  ...
-                  'Invalid option provided');
-        end
-        
-        % Default values
-        matricesPerFile = floor(1e6/matrixSize);
-        filenamePrefix  = 'BHIME';
-        
-        % matricesPerFile
-        if isfield(options, optionNames.matricesPerFile)
-            matricesPerFile = options.matricesPerFile;
-            
-            % Check that matricesPerFile is a positive integer
-            if ~((matricesPerFile>0) && (mod(matricesPerFile,1)==0))
-                error('matricesPerFile option must be a positive integer');
-            end
-        end
-        
-        % filenamePrefix
-        if isfield(options, optionNames.filenamePrefix)
-            filenamePrefix = options.filenamePrefix;
-        end
-        
-        opts = struct('matricesPerFile', matricesPerFile, ...
-                      'filenamePrefix', filenamePrefix);
+    % storeDataWithSymmetry
+    fprintf(file, 'storeDataWithSymmetry ... ');
+    if opts.storeDataWithSymmetry
+        fprintf(file, 'true\n');
+    else
+        fprintf(file, 'false\n');
     end
-    
-    
+
+    % generator
+    fprintf(file, 'generator ............... %s\n', func2str(generator));
+
+    % matrixSize
+    fprintf(file, 'matrixSize .............. %d\n', matrixSize);
+
+    fclose(file);
 end

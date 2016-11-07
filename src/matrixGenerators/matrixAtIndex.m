@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Mar. 5/2016                                                 %
+% UPDATED ... Nov. 7/2016                                                 %
 %                                                                         %
 % This function generates the square matrix with entries from a           %
 % population vector such that:                                            %
@@ -36,7 +36,7 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function A = matrixAtIndex(i, n, population)
+function A = matrixAtIndex(i, population, n)
     
     % Number of values in population vector
     popsize = length(population);
