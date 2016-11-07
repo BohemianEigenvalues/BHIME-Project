@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... May 22/2016                                                 %
+% UPDATED ... Nov. 7/2016                                                 %
 %                                                                         %
 % Convert processed data into an image given a colormap. A new directory  %
 % Images will be created in the working directory if it doesn't already   %
@@ -70,6 +70,14 @@ function processImage(workingDirIn, processedDataFilename, cmap, x, options)
     
     if nargin < 5
         options = struct();
+    end
+    
+    % Check that cmap and x have matching dimension
+    if size(cmap, 2) ~= 3
+        error('Color map must have 3 columns');
+    end
+    if size(cmap, 1) ~= max(size(x))
+        error('Colormap and weight vector must be of same length');
     end
     
     % Process the options
