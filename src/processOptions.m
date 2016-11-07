@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... May 22/2016                                                 %
+% UPDATED ... Nov. 7/2016                                                 %
 %                                                                         %
 % Process the options input options struct. If an option is not in the    %
 % options struct the default value is used.                               %
@@ -12,8 +12,6 @@
 % OUTPUT                                                                  %
 %   A struct opts with keys                                               %
 %       backgroundColor ............ [double, double, double] all in [0,1]%
-%       colorByCond ................ bool                                 %
-%       computeCond ................ bool                                 %
 %       dataPrecision .............. str in {'double', 'single'}          %
 %       filenamePrefix ............. str, valid filename                  %
 %       height ..................... posint                               %
@@ -74,8 +72,6 @@ function opts = processOptions(options)
     end
     
     optNames = struct('backgroundColor', 'backgroundColor', ...
-                          'colorByCond', 'colorByCond', ...
-                          'computeCond', 'computeCond', ...
                         'dataPrecision', 'dataPrecision', ...
                        'filenamePrefix', 'filenamePrefix', ...
                                'height', 'height', ...
@@ -110,8 +106,6 @@ function opts = processOptions(options)
     
     % Default values
     opts.backgroundColor               = [0, 0, 0];
-    opts.colorByCond                   = false;
-    opts.computeCond                   = false;
     opts.dataPrecision                 = 'single';
     opts.filenamePrefix                = 'BHIME';
     opts.height                        = 1001;
@@ -152,24 +146,6 @@ function opts = processOptions(options)
         opts.backgroundColor = options.backgroundColor;
         
         % TO DO: Add type checking (vector of 3 values in [0,1])
-        
-    end
-    
-    % colorByCond ----------------------
-    if isfield(options, optNames.colorByCond)
-        
-        opts.colorByCond = options.colorByCond;
-        
-        % TO DO: Add type checking (bool)
-        
-    end
-    
-    % computeCond ----------------------
-    if isfield(options, optNames.computeCond)
-        
-        opts.computeCond = options.computeCond;
-        
-        % TO DO: Add type checking (bool)
         
     end
     

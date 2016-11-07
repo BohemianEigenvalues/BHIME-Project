@@ -1,15 +1,12 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... May 22/2016                                                 %
+% UPDATED ... Nov. 7/2016                                                 %
 %                                                                         %
 % This function will read all .mat files created by the                   %
-% generateRandomSample function and sort the eigenvalues onto the complex %
-% plane. If the colorByCond input argument is set to Density, then a grid %
-% in the complex plane will count the number of eigenvalues that fall     %
-% into each grid point. If Cond is specified then the average condition   %
-% number of each eigenvalue that falls in each gridpoint will be          %
-% computed.                                                               %
+% generateRandomSample function and create a histogram in the complex     %
+% plane of their densities.                                               %
+%                                                                         %
 %   - A readme file will be automatically generated the first time this   %
 %     function is called, if a readme file already exists then it will    %
 %     be appended with information about this call.                       %
@@ -22,15 +19,9 @@
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
-%   colorByCond ................ Default = false                          %
-%                                When set to true, coloring represents    %
-%                                the average eigenvalue condition number  %
-%                                over all the data at each pixel rather   %
-%                                than coloring by density.                %
 %   filenamePrefix ............. Default = BHIME                          %
 %                                The prefix for the .mat files that       %
-%                                contain the eigenvalues and their        %
-%                                condition numbers.                       %
+%                                contain the eigenvalues.                 %
 %   height ..................... Default = 1001 (pixels)                  %
 %                                The height (in pixels) of the grid to be %
 %                                used,  the width is determined from the  %
@@ -159,17 +150,7 @@ function [outputFilename, stats] = processData(workingDirIn, options)
     % Write readme file
     writeReadMe(processedDataDir, outputFilename, opts);
     
-    % -------------------------
-    
-    % Call correct function if colorByCond is true
-    if opts.colorByCond
-        error('Condition number coloring is not currently supported.');
-        % [mesh, stats] = process_cond();
-    else
-        [mesh, stats] = process_density(dataDir, opts);
-    end
-    
-    % -------------------------
+    [mesh, stats] = process_density(dataDir, opts);
     
     % Write mesh to a text file
     if strcmp(opts.outputFileType, 'txt')
@@ -323,7 +304,6 @@ end
 function writeReadMe(processedDataDir, outputFilename, opts)
     
     % Get the options
-    colorByCond     = opts.colorByCond;
     ignoreReal      = opts.ignoreReal;
     ignoreRealTol   = opts.ignoreRealTol;
     map             = opts.map;
@@ -342,14 +322,6 @@ function writeReadMe(processedDataDir, outputFilename, opts)
     % Date
     fprintf(file, '    Created ............. %s\n', ...
                    datestr(now,'mmmm dd/yyyy HH:MM:SS AM'));
-    
-    % colorByCond
-    fprintf(file,  '    colorByCond ......... ');
-    if colorByCond
-        fprintf(file, 'true\n');
-    else
-        fprintf(file, 'false\n');
-    end
     
     % ignoreReal
     fprintf(file, '    ignoreReal .......... ');
@@ -401,64 +373,6 @@ function writeReadMe(processedDataDir, outputFilename, opts)
     fclose(file);
     
 end
-
-
-% -------------------------------------------------------------------------
-% process_density_no_symmetry_tmp
-% -------------------------------------------------------------------------
-%function process_density_tmp(dataFilename, tmpFilename, opts)
-%    
-%    resolution = opts.resolution;
-%    margin     = opts.margin;
-%    
-%    % Sizes of the points
-%    pointWidth  = (margin.right - margin.left)/resolution.width;
-%    pointHeight = (margin.top - margin.bottom)/resolution.height;
-%    
-%    % Make the mesh to store the result (local to loop)
-%    mesh = uint32(zeros(resolution.height, resolution.width));
-%    
-%    % Load the eigenvalues
-%    z = parLoad(dataFilename);
-%    z = z.eigVals(:);
-%    
-%    % Map the eigenvalues
-%    z = opts.map(z);
-%    
-%    % tolerance for ignoreReal option
-%    tol = opts.ignoreRealTol;
-%    
-%    % If symmetry, add reflection of values across imaginary axis
-%    if opts.symmetry
-%        z = [z, -conj(z)];
-%    end
-%    
-%    z = z(isInMargin(real(z), imag(z), margin));
-%    
-%    if opts.ignoreReal
-%        z = z(abs(imag(z)) > tol);
-%    end
-%    
-%    xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
-%    yVal = uint32(ceil((imag(z) - margin.bottom)/pointHeight));
-%    
-%    idx = uint32(((xVal - 1)*resolution.height + yVal));
-%    
-%    % Count number of occurrences of each unique value
-%    y = sort(idx);
-%    p = find([true; diff(y)~=0; true]);
-%    values = y(p(1:end-1));
-%    instances = diff(p);
-%    
-%    % Increment appropriate values
-%    %mesh(values) = mesh(values) + uint32(instances);
-%    mesh(values) = uint32(instances);
-%    
-%    % Write mesh to a temporary .mat file
-%    parSave(tmpFilename, 1, mesh);
-%
-%end
-
 
 % -------------------------------------------------------------------------
 function b = isInMargin(x, y, margin)
@@ -571,16 +485,12 @@ function outputFilename = makeOutputFilename(processedDataDir, opts)
     
     resolution      = opts.resolution;
     filenamePrefix  = opts.filenamePrefix;
-    colorByCond     = opts.colorByCond;
     numProcessFiles = opts.numProcessFiles;
     outputFileType  = opts.outputFileType;
     
     outPrefix = [filenamePrefix, '-', ...
                  num2str(resolution.width), 'x', ...
                  num2str(resolution.height)];
-    if colorByCond
-        outPrefix = [outPrefix, '-Cond'];
-    end
 
     if exist([processedDataDir, outPrefix, '.', outputFileType]) == 2
         outPrefix = [outPrefix, '-'];
@@ -636,260 +546,3 @@ function width = getWidth(margin, height)
     widthI = margin.right - margin.left;
     width = floor(widthI*height/heightI);
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-    
-    % ---------------------------------------------------------------------
-    %{
-    function process_data_files_density()
-        
-        numProcessFiles = opts.numProcessFiles;
-        filenamePrefix  = opts.filenamePrefix;
-        
-        % Process all the data files
-        parfor i = 1:numProcessFiles
-            
-            fprintf('File %d of %d\n', i, numProcessFiles);
-            
-            tmpFilename  = [processDataDir, ...
-                            'tmp_', num2str(i), '.mat'];
-            
-            dataFilename = [dataDir, filenamePrefix, ...
-                            '_', num2str(i), '.mat'];
-            
-            % Call function to save the processed data to a temporary file
-            process_density_tmp(dataFilename, tmpFilename, opts);
-        end
-        
-    end
-    %}
-    
-    
-    % ---------------------------------------------------------------------
-    %{
-    function [meshs, stats] = total_tmp_files_density()
-        
-        resolution      = opts.resolution;
-        numProcessFiles = opts.numProcessFiles;
-        
-        % Make the mesh to store the result
-        meshs = uint32(zeros(resolution.height, resolution.width));
-        
-        % Vector to store number of unique points
-        numUniquePts = zeros(1, numProcessFiles);
-        
-        disp('THIS PART');
-        
-        % Read all temprary files and combine
-        parfor i = 1:numProcessFiles
-            
-            % Get the mesh from the temporary
-            f = parLoad([processDataDir, 'tmp_', num2str(i), '.mat']);
-            
-            % Update cumulative mesh
-            meshs = meshs + f.mesh;
-            
-            % Count number of unique points
-            %numUniquePts(i) = length(meshs(meshs ~= 0));
-            
-            % Delete the temporary file
-            %delete([processDataDir, 'tmp_', num2str(i), '.mat']);
-            
-        end
-        
-        % -------------------------
-        % Fill in the statistics struct
-        stats = struct();
-        
-        % Number of unique points
-        stats.numUniquePts = numUniquePts;
-        
-    end
-    %}
-    
-    % ---------------------------------------------------------------------
-    %{
-    function [mesh, stats] = process_cond()
-        
-        % Process the data files into temporary files
-        process_data_files_cond();
-        
-        % Add up all the temporary files
-        [mesh, stats] = total_tmp_files_cond();
-        
-    end
-    %}
-    %{
-    % ---------------------------------------------------------------------
-    function process_data_files_cond()
-        
-        % Process all the data files
-        parfor i = 1:numProcessFiles
-            
-            fprintf('File %d of %d\n', i, numProcessFiles);
-            
-            tmpFilename_count  = [processDataDir, ...
-                                  'tmp_count_', ...
-                                  num2str(i), '.mat'];
-            tmpFilename_total  = [processDataDir, ...
-                                  'tmp_total_', ...
-                                  num2str(i), '.mat'];
-            
-            dataFilename = [dataDir, dataFilePrefix, ...
-                            '_', num2str(i), '.mat'];
-            
-            % Call function to save the processed data to a temporary file
-            process_cond_tmp(dataFilename, ...
-                             tmpFilename_count, ...
-                             tmpFilename_total, ...
-                             opts);
-        end
-        
-    end
-    
-    %}
-    %{
-    % ---------------------------------------------------------------------
-    function [mesh, stats] = total_tmp_files_cond()
-        
-        % Make the mesh to store the result
-        count = uint32(zeros(resolution.height, resolution.width));
-        total =        zeros(resolution.height, resolution.width);
-        mesh  =        zeros(resolution.height, resolution.width);
-        
-        % Vector to store number of unique points
-        numUniquePts = zeros(1, numProcessFiles);
-        
-        % Read all temprary files and combine
-        for i = 1:numProcessFiles
-            
-            c = load([processDataDir, ...
-                      'tmp_count_', ...
-                      num2str(i), '.mat'], 'count');
-            t = load([processDataDir, ...
-                      'tmp_total_', ...
-                      num2str(i), '.mat'], 'total');
-            
-            count = count + c.count;
-            total = total + t.total;
-            
-            numUniquePts(i) = length(t.total(t.total ~= 0));
-            
-            delete([processDataDir, 'tmp_count_', num2str(i), '.mat']);
-            delete([processDataDir, 'tmp_total_', num2str(i), '.mat']);
-            
-        end
-        
-        % Compute the average
-        for i=1:numel(mesh)
-            if count(i) ~= 0
-                mesh(i) = total(i)/double(count(i));
-                
-                if mesh(i) == 0 && total(i) ~= 0
-                    mesh(i) = realmin;
-                end
-            end
-        end
-        
-        % -------------------------
-        % Fill in the statistics struct
-        stats = struct();
-        
-        % Number of unique points
-        stats.numUniquePts = numUniquePts;
-        
-    end
-    %}
-    
-% -------------------------------------------------------------------------
-%function process_cond_tmp(dataFilename, tmpFilename_count,  tmpFilename_total, opts)
-%end
-%{
-    resolution = opts.resolution;
-    margin = opts.margin;
-
-    % Sizes of the points
-    pointWidth  = (margin.right - margin.left)/resolution.width;
-    pointHeight = (margin.top - margin.bottom)/resolution.height;
-
-    % Make the mesh to store the result
-    count = uint32(zeros(resolution.height, resolution.width));
-    total = zeros(resolution.height, resolution.width);
-
-    % Load the eigenvalues
-    data = parLoad(dataFilename);
-    z = data.eigVals;
-
-    % Map the eigenvalues
-    z = opts.map(z);
-
-    % Get the eigenvalue condition numbers
-    condVals = data.condVals;
-
-    % tolerance for ignoreReal option
-    tol = opts.ignoreRealTol;
-
-    % If symmetry, add reflection of values across imaginary axis
-    if opts.symmetry
-        z = [z, -conj(z)];
-        condVals = [condVals, condVals];
-    end
-
-    valid = isInMargin(real(z), imag(z), margin);
-
-    z = z(valid);
-    condVals = condVals(valid);
-
-    if opts.ignoreReal
-        valid = abs(imag(z)) > tol;
-        z = z(valid);
-        condVals = condVals(valid);
-    end
-
-    idx = uint32((ceil((real(z) - margin.left)/pointWidth) - 1)*resolution.height + ceil((imag(z) - margin.bottom)/pointHeight));
-
-    % Count number of occurrences of each unique value
-    [y, I] = sort(idx(:));
-    condVals = condVals(I);
-    p = find([true;diff(y)~=0;true]);
-    values = y(p(1:end-1));
-    instances = diff(p);
-
-    count(values) = count(values) + uint32(instances);
-    total(values) = total(values) + condVals(instances)
-
-
-    if isInMargin(xVal, yVal, margin) && (abs(yVal) > tol || ~ignoreReal)
-
-            xIdx = uint32(ceil((xVal - margin.left)/pointWidth));
-            yIdx = uint32(ceil((yVal - margin.bottom)/pointHeight));
-
-            count(yIdx, xIdx) = count(yIdx, xIdx) + 1;
-            total(yIdx, xIdx) = total(yIdx, xIdx) + cVal;
-        else
-            outsideCount = outsideCount + 1;
-        end
-    end
-
-    % Write mesh to a temporary .mat file
-    parSave(tmpFilename_count, 1, count);
-    parSave(tmpFilename_total, 1, total);
-
-end
-%}

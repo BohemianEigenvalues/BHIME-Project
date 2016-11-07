@@ -1,10 +1,9 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Oct. 3/2016                                                 %
+% UPDATED ... Nov. 7/2016                                                 %
 %                                                                         %
-% This function will generate .mat files containing the eigenvalues and   %
-% their condition numbers (if option computeCond is true) for a sample of %
+% This function will generate .mat files containing the for a sample of   %
 % matrices. The matrices are sampled from a user provided function.       %
 %   - A new directory 'Data' will be created in the input workingDir, or  %
 %     if the option overrideDataDir is set, this will be created and used %
@@ -24,11 +23,6 @@
 %                                                                         %
 % OPTIONS                                                                 %
 %   Options input should be a struct                                      %
-%   computeCond ............. Default = false                             %
-%                             When set to true, this function will        %
-%                             compute and store the condition numbers of  %
-%                             the eigenvalues. This will take roughly 6   %
-%                             times longer to execute when set to true.   %
 %   dataPrecision ........... Default = 'single'                          %
 %                             This can be set to either 'single' or       %
 %                             'double'. This option does not affect the   %
@@ -57,14 +51,14 @@
 %                             output data file (if ignoreRealData is      %
 %                             true) if abs(Im(z)) < ignoreRealTol.        %
 %   matricesPerFile ......... Default = floor(1e6/matrixSize)             %
-%                             Control how many matrices eigenvalues (and  %
-%                             condition numbers) are in each data file.   %
+%                             Control how many matrices eigenvalues are   %
+%                             in each data file.                          %
 %   numDataFiles ............ Default = 1                                 %
 %                             Set this option to a positive integer if    %
 %                             you would like to generate multiple files   %
 %                             with data where each file contains the      %
-%                             eigenvalues and their condition numbers for %
-%                             matricesPerFile random matrices.            %
+%                             eigenvalues for matricesPerFile random      %
+%                             matrices.                                   %
 %   overrideDataDir ......... Default = [empty string] (not set)          %
 %                             Set this option to a non-empty string       %
 %                             indicating a directory to write the data    %
@@ -136,7 +130,6 @@ function generateRandomSample(generator, workingDirIn, options)
     startFileIndex  = opts.startFileIndex;
     numDataFiles    = opts.numDataFiles;
     filenamePrefix  = opts.filenamePrefix;
-    computeCond     = opts.computeCond;
     
     if ~opts.startFileIndexIsSet
         startFileIndex = getStartFileIndex(dataDir, filenamePrefix);
@@ -165,28 +158,15 @@ function generateRandomSample(generator, workingDirIn, options)
         
         fprintf('\n%d of %d\n', k, endFileIndex);
         
-        if computeCond
-            [eigVals, condVals] = computeData(generator, matrixSize, opts);
-        else
-            eigVals = computeData(generator, matrixSize, opts);
-        end
+        eigVals = computeEig(generator, matrixSize, opts);
         
-        % ---------------
         % Save the data
         generatorStr = func2str(generator);
         filename = [dataDir, filenamePrefix, '_', num2str(k), '.mat'];
         
-        if computeCond
-            save(filename, 'eigVals', ...
-                           'condVals', ...
-                           'matrixSize', ...
-                           'generatorStr');
-        else
-            save(filename, 'eigVals', ...
-                           'matrixSize', ...
-                           'generatorStr');
-        end
-        % ---------------
+        save(filename, 'eigVals', ...
+                       'matrixSize', ...
+                       'generatorStr');
         
         % Timing
         tElapsed = toc(t2);  % timer 2
@@ -204,92 +184,6 @@ end
 % =====================================================================
 % FUNCTIONS
 % =====================================================================
-
-
-% ------------------------------------------------------------------- %
-% computeData                                                         %
-%                                                                     %
-% Compute the eigenvalues and optionally their condition numbers      %
-% ------------------------------------------------------------------- %
-function [eigVals, condVals] = computeData(generator, matrixSize, opts)
-    
-    if nargout == 1
-        eigVals = computeEig(generator, matrixSize, opts);
-    else
-        [eigVals, condVals] = computeEigAndCond(generator, matrixSize, opts);
-    end
-    
-end
-
-
-% ------------------------------------------------------------------- %
-% computeEigAndCond                                                   %
-%                                                                     %
-% Compute both the eigenvalues and their condition numbers            %
-% ------------------------------------------------------------------- %
-function [eigVals, condVals] = computeEigAndCond(generator, matrixSize, opts)
-    
-    % Size of the inner loop, need to find optimal value for this
-    % parameter based on the matricesPerFile variable
-    % Maybe matricesPerFile/100?
-    % Maybe matricesPerFile/(numCores*10)?
-    innerLoopSize = 1e4;
-    
-    % Outer loop size
-    outerLoopSize = opts.matricesPerFile/innerLoopSize;
-    
-    % Vector to store the computed eigenvalues
-    eigVals  = zeros(innerLoopSize*matrixSize, outerLoopSize);
-    condVals = zeros(innerLoopSize*matrixSize, outerLoopSize);
-    
-    parfor i=1:outerLoopSize
-        
-        eigValsLocal  = zeros(innerLoopSize, matrixSize);
-        condValsLocal = zeros(innerLoopSize, matrixSize);
-        
-        for j=1:innerLoopSize
-            
-            A = generator();
-            
-            % Compute eigenvalues and condition numbers w.r.t. eigenvalues
-            [~, D, s] = condeig(A);
-            
-            eigValsLocal(i,:)  = diag(D);
-            condValsLocal(i,:) = s;
-            
-        end
-        
-        eigVals(:, i)  = eigValsLocal(:);
-        condVals(:, i) = condValsLocal(:)
-        
-    end
-    
-    % Cast to single in dataPrecision option is set to single
-    if strcmp(opts.dataPrecision, 'single')
-        eigVals  = single(eigVals);
-        condVals = single(condVals);
-    end
-    
-    % Convert to a vector
-    eigVals  = eigVals(:);
-    condVals = condVals(:);
-    
-    % ignoreRealData option
-    if opts.ignoreRealData
-        valid = abs(imag(eigVals)) > opts.ignoreRealTol;
-        eigVals  = eigVals(valid);
-        condVals = condVals(valid);
-        
-    end
-    
-    % storeDataWithSymmetry option
-    if opts.storeDataWithSymmetry
-        valid = imag(eigVals) >= 0 & real(eigVals) >= 0;
-        eigVals  = eigVals(valid);
-        condVals = condVals(valid);
-    end
-    
-end
 
 
 % ------------------------------------------------------------------- %
@@ -408,7 +302,6 @@ end
 % ----------------------------------------------------------------------- %
 function writeParametersFile(dataDir, generator, matrixSize, opts)
     
-    computeCond           = opts.computeCond;
     dataPrecision         = opts.dataPrecision;
     filenamePrefix        = opts.filenamePrefix;
     ignoreRealData        = opts.ignoreRealData;
@@ -419,7 +312,6 @@ function writeParametersFile(dataDir, generator, matrixSize, opts)
     save([dataDir, 'parameters.mat'], ...
          'generator', ...
          'matrixSize', ...
-         'computeCond', ...
          'dataPrecision', ...
          'filenamePrefix', ...
          'ignoreRealData', ...
@@ -448,12 +340,6 @@ function b = checkParametersFile(dataDir, generator, matrixSize, opts)
     f = load([dataDir, 'parameters.mat']);
     
     b = true;
-    
-    % Check computeCond
-    if f.computeCond ~= opts.computeCond
-        fprintf('computeCond option does not match\n');
-        b = false;
-    end
     
     % Check dataPrecision
     if f.dataPrecision ~= opts.dataPrecision
@@ -526,14 +412,6 @@ function writeReadMe(dataDir, generator, matrixSize, opts)
     % Date
     fprintf(file, 'Last Updated ............ %s\n', ...
             datestr(now,'mmmm dd/yyyy HH:MM:SS AM'));
-    
-    % computeCond
-    fprintf(file, 'computeCond ............. ');
-    if opts.computeCond
-        fprintf(file, 'true\n');
-    else
-        fprintf(file, 'false\n');
-    end
     
     % dataPrecision
     fprintf(file, 'dataPrecision ........... %s\n', opts.dataPrecision);
