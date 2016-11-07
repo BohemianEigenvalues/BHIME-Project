@@ -1,13 +1,13 @@
 # BHIME Project
 
-BHIME (pronounced Bohemian) is an acronym for Bounded Height Integer Matrix Eigenvalues. 
-This project originated in exploring and visualizing the distributions of the eigenvalues of bounded height integer matrices. 
+BHIME (pronounced Bohemian) is an acronym for Bounded Height Integer Matrix Eigenvalues.
+This project originated in exploring and visualizing the distributions of the eigenvalues of bounded height integer matrices.
 The project has since evolved to include many other classes of matrices.
 The name has stuck and we typically call the eigenvalues in these images *Bohemian Eigenvalues*.
 
 Slides on the Bohemian Eigenvalue Project can be found [here](https://s3.amazonaws.com/stevenethornton.github/BHIME+Slides.pdf).
 
-__Full examples as well as the images they produce can be found in the [Examples section](https://github.com/steventhornton/BHIME-Project#examples) or in the [Examples folder]().__
+__Full examples as well as the images they produce can be found in the [Examples section](https://github.com/steventhornton/BHIME-Project#examples) or in the [Examples folder](https://github.com/steventhornton/BHIME-Project/tree/master/Examples).__
 
 #### Matlab Requirements
 - The __Parallel Computing Toolbox__ must be installed. If you do not have the parallel computing toolbox install you may modify the code slightly by changing all `parfor` loops to `for` loops.
@@ -19,7 +19,7 @@ Detailed instructions on how the code works can be found in the [readme]() in th
 
 ## Example 1
 The eigenvalues of a random sample of 5x5 matrices where the entries are sampled uniformly from {-1, 0, 1}.
-See [`Examples/Example1.m`]() for a more detailed explanation of how this example works.
+See [`Examples/Example1.m`](https://github.com/steventhornton/BHIME-Project/blob/master/Examples/Example1.m) for a more detailed explanation of how this example works.
 ```matlab
 % Set the working directory
 workingDir = '~/Real5x5_d3/';
