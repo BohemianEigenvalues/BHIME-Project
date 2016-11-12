@@ -1,6 +1,7 @@
 % ----------------------------------------------------------------------- %
-% EXAMPLE 8 -- Eigenvalues of a 12x12 compaion matrix  of a polynomial    %
-%              with coefficients sampled uniformly from the set {-1, 1}   %
+% EXAMPLE 8 -- Eigenvalues of 20x20 companion matrices of polynomials     %
+%              with the coefficients sampled uniformly from the set       %
+%              {-1, 1}.                                                   %
 % ----------------------------------------------------------------------- %
 
 % Matrix size (polyDeg = 20)
@@ -10,7 +11,7 @@ n = 19;
 population = [-1, 1];
 
 % The generator
-g = @(i) randomCompanionMatrix(population, n);
+g = @() randomCompanionMatrix(population, n);
 
 workingDir = '~/CompanionMatrix/';
 
