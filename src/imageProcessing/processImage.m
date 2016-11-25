@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Nov. 7/2016                                                 %
+% UPDATED ... Nov. 25/2016                                                %
 %                                                                         %
 % Convert processed data into an image given a colormap. A new directory  %
 % Images will be created in the working directory if it doesn't already   %
@@ -50,6 +50,10 @@
 %                                does not exist this function will        %
 %                                create it.                               %
 %                                                                         %
+% OUTPUT                                                                  %
+%   outputImageFilename ... The name of the image file that will be       %
+%                           written                                       %
+%                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
 %   it under the terms of the GNU General Public License as published by  %
@@ -64,7 +68,7 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function processImage(workingDirIn, processedDataFilename, cmap, x, options)
+function outputImageFilename = processImage(workingDirIn, processedDataFilename, cmap, x, options)
     
     narginchk(4, 5);
     
