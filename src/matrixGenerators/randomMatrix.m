@@ -1,5 +1,5 @@
 % ----------------------------------------------------------------------- %
-% AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
+% AUTHOR .... Steven E. Thornton (Copyright (c) 2017)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
 % UPDATED ... Mar. 5/2016                                                 %
 %                                                                         %

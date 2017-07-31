@@ -1,26 +1,22 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2017)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Nov. 7/2016                                                 %
+% UPDATED ... Jul. 31/2017                                                %
 %                                                                         %
-% This function generates the square matrix with entries from a           %
-% population vector such that:                                            %
-%   - The population vector is of length b                                %
-%   - The max number of unique matrices is N = b^(n^2)                    %
-%   - Let R = i mod N in base b                                           %
-%   - Reverse R and pad on the left with zeros to give a number with n^2  %
-%     digits                                                              %
-%   - This number then gives the indices of the population vector for     %
-%     each element of the output matrix                                   %
+% This function will generate a random Hamiltonian matrix where the       %
+% entries are sampled from a given list.                                  %
 %                                                                         %
 % INPUT                                                                   %
-%   i ............ Index to select matrix at                              %
+%   population ... Vector of values to sample entries from                %
 %   n ............ Size of matrix                                         %
-%   population ... Vector of values to be used in matrix                  %
 %                                                                         %
 % OUTPUT                                                                  %
-%   A square matrix where the entries are sampled from the population and %
-%   determined uniquely for each value of i mod N.                        %
+%   An nxn Hamiltonian matrix where the entries are randomly sampled from %
+%   the population vector. i.e. A matrix of the form:                     %
+%           [A B                                                          %
+%            C -A'];                                                      %
+%   where B and C are symmetric matrices. A, B, and C are all of square   %
+%   matrices of the same size.                                            %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -36,28 +32,22 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function A = matrixAtIndex(i, population, n)
+function H = randomHamiltonianMatrix(population, n)
     
-    % Number of values in population vector
-    popsize = length(population);
-
-    % Number of different matrices belonging to this class
-    % i.e. number of different nxn matrices with entries from population
-    % vector
-    classSize = popsize^(n^2);
+    A = randsample(population, (n/2)^2, true);
+    A = reshape(A, [n/2, n/2]);
     
-    % Make input i value between 0 and classSize-1
-    imod = mod(i, classSize);
+    l = randsample(population, (n/2)*((n/2) + 1)/2, true);
+    B = triu(ones(n/2)); 
+    B(B==1) = l;
+    B = B + tril(B.',-1);
     
-    % Convert to base popsize to use for indexing
-    idx = dec2base(imod, popsize)-'0';
-    
-    % Pad the idx vector with zeros
-    idxsize = length(idx);
-    idx = [zeros(1, n^2 - idxsize), idx];
-    idx = fliplr(idx);
-    
-    % Get population values at index and make an nxn matrix
-    A = reshape(population(idx+1), [n,n])';
+    l = randsample(population, (n/2)*((n/2) + 1)/2, true);
+    C = triu(ones(n/2)); 
+    C(C==1) = l;
+    C = C + tril(C.',-1);
+   
+    H = [A, B;
+         C, -A'];
     
 end

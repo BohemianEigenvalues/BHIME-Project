@@ -1,23 +1,24 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2017)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Jul. 31/2016                                                %
+% UPDATED ... Jul. 31/2017                                                %
 %                                                                         %
-% This function will generate a random circulant matrix where the entries %
-% are sampled from a given list.                                          %
+% This function will generate a random matrix where the entries are       %
+% sampled from a shifted and scaled beta distribution. Entries iid.       %
 %                                                                         %
 % INPUT                                                                   %
-%   population ... Vector of values to sample entries from                %
-%   n ............ Size of matrix                                         %
+%   alpha ... Shape parameter for beta distribution                       %
+%   beta .... Shape parameter for beta distribution                       %
+%   shift ... Amount to shift values by                                   %
+%   scale ... Amount to scale values by                                   %
+%   n ....... Size of matrix                                              %
 %                                                                         %
 % OUTPUT                                                                  %
-%   An nxn circulant matrix with entries randomly sampled from the        %
-%   population vector.                                                    %
-%                                                                         %
-% REFERENCES                                                              %
-%   mathworks.com/matlabcentral/fileexchange/22858-circulant-matrix       %
-%   wikipedia.org/wiki/Circulant_matrix                                   %
-%   mathworld.wolfram.com/CirculantMatrix.html                            %
+%   An nxn matrix where the entries are of the form:                      %
+%       A_{i,j} = shift + scale*X_{i,j}                                   %
+%   where X_{i,j} is sampled from a beta distribution with parameters     %
+%   alpha and beta. Note that a beta distribution will return a values    %
+%   between 0 and 1.                                                      %
 %                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
@@ -33,13 +34,6 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function A = randomCirculantMatrix(population, n)
-    
-    vec = randsample(population, n, true);
-    
-    n1 = n-1;
-    
-    A = vec(mod(bsxfun(@plus,(0:n1)',0:n1),n)+1);
-    A = flipud(A);
-
+function A = randomBeta(alpha, beta, shift, scale, n)
+    A = shift + scale*random('beta', alpha, beta, [n,n]);
 end
