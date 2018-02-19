@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
-% AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
+% AUTHOR .... Steven E. Thornton (Copyright (c) 2017)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Nov. 7/2016                                                 %
+% UPDATED ... Feb. 19/2018                                                %
 %                                                                         %
 % This function will generate .mat files containing the for a sample of   %
 % matrices. The matrices are sampled from a user provided function.       %
@@ -10,10 +10,6 @@
 %     to store the files created by this function.                        %
 %   - A readme.txt file will be automatically generated in the data       %
 %     directory.                                                          %
-%   - A parameters.mat file will be automatically generated in the data   %
-%     directory. This will contain information about the parameter        %
-%     (option) values used when calling the function and ensures          %
-%     consistency when the more data is added to an existing directory    %
 %                                                                         %
 % INPUT                                                                   %
 %   generator ............... A function handle that takes no input and   %
@@ -135,9 +131,6 @@ function generateRandomSample(generator, workingDirIn, options)
         startFileIndex = getStartFileIndex(dataDir, filenamePrefix);
     end
     
-    % Check for a parameters.mat file
-    checkForParametersFile(dataDir, generator, matrixSize, opts);
-    
     % Write a readme file
     writeReadMe(dataDir, generator, matrixSize, opts);
     
@@ -166,7 +159,8 @@ function generateRandomSample(generator, workingDirIn, options)
         
         save(filename, 'eigVals', ...
                        'matrixSize', ...
-                       'generatorStr');
+                       'generatorStr', ...
+                       '-v7.3');
         
         % Timing
         tElapsed = toc(t2);  % timer 2
@@ -198,7 +192,7 @@ function eigVals = computeEig(generator, matrixSize, opts)
     % parameter based on the matricesPerFile variable
     % Maybe matricesPerFile/100?
     % Maybe matricesPerFile/(numCores*10)?
-    innerLoopSize = 1e4;
+    innerLoopSize = max(min(1e4, floor(opts.matricesPerFile/(10*feature('numCores')))),1);
     
     % Outer loop size
     outerLoopSize = opts.matricesPerFile/innerLoopSize;
@@ -211,7 +205,9 @@ function eigVals = computeEig(generator, matrixSize, opts)
         eigValsLocal = zeros(innerLoopSize, matrixSize);
         
         for j=1:innerLoopSize
-            eigValsLocal(j, :) = eig(generator());
+            try
+                eigValsLocal(j, :) = eig(generator());
+            end
         end
         
         eigVals(:, i) = eigValsLocal(:);
@@ -234,159 +230,6 @@ function eigVals = computeEig(generator, matrixSize, opts)
     % storeDataWithSymmetry option
     if opts.storeDataWithSymmetry
         eigVals = eigVals(imag(eigVals) >= 0 & real(eigVals) >= 0);
-    end
-    
-end
-
-
-% ----------------------------------------------------------------------- %
-% checkForParametersFile                                                  %
-%                                                                         %
-% Check if a parameters file exists, if it doesn't, create on. If it does %
-% verify that the parameters for this call of the function match what is  %
-% in the parameters.mat file. If they don't match give the user the       %
-% option to abort or overwrite all previous data.                         %
-%                                                                         %
-% INPUT                                                                   %
-%   dataDir ...... Directory with data                                    %
-%   generator .... Matrix generator function handle                       %
-%   matrixSize ... Size of the matrices that are generated                %
-%   opts ......... The option struct                                      %
-% ----------------------------------------------------------------------- %
-function checkForParametersFile(dataDir, generator, matrixSize, opts)
-    
-    % Check if parameters.mat file exists
-    if exist([dataDir, 'parameters.mat']) == 2
-        
-        % Verify all parameters match
-        match = checkParametersFile(dataDir, generator, matrixSize, opts);
-        
-        if ~match
-            str = '';
-            while ~(strcmp(str, 'yes') || strcmp(str, 'no'))
-                str = input('Would you like overwrite all old data(yes/no): ', 's');
-            end
-            
-            if strcmp(str, 'yes')
-                % Delete all old data files
-                delete([dataDir, '*.mat']);
-                delete([dataDir, '*.txt']); 
-               
-                % Write a paramters.mat file
-                writeParametersFile(dataDir, generator, matrixSize, opts);
-            else
-                error('Cannot create data with different parameters.');
-            end
-            
-        end
-        
-    else
-        % Write a paramters.mat file
-        writeParametersFile(dataDir, generator, matrixSize, opts);
-    end
-    
-end
-
-
-% ----------------------------------------------------------------------- %
-% writeParametersFile                                                     %
-%                                                                         %
-% Write a file parameters.mat in the data directory that contains the     %
-% values of several parameters specific to the data.                      %
-%                                                                         %
-% INPUT                                                                   %
-%   dataDir ...... Directory with data                                    %
-%   generator .... Matrix generator function handle                       %
-%   matrixSize ... Size of the matrices that are generated                %
-%   opts ......... The option struct                                      %
-% ----------------------------------------------------------------------- %
-function writeParametersFile(dataDir, generator, matrixSize, opts)
-    
-    dataPrecision         = opts.dataPrecision;
-    filenamePrefix        = opts.filenamePrefix;
-    ignoreRealData        = opts.ignoreRealData;
-    ignoreRealTol         = opts.ignoreRealTol;
-    matricesPerFile       = opts.matricesPerFile;
-    storeDataWithSymmetry = opts.storeDataWithSymmetry;
-    
-    save([dataDir, 'parameters.mat'], ...
-         'generator', ...
-         'matrixSize', ...
-         'dataPrecision', ...
-         'filenamePrefix', ...
-         'ignoreRealData', ...
-         'ignoreRealTol', ...
-         'matricesPerFile', ...
-         'storeDataWithSymmetry');
-    
-end
-
-
-% ----------------------------------------------------------------------- %
-% checkParametersFile                                                     %
-%                                                                         %
-% Check if the values in the paramters.mat file match the values used in  %
-% this call to the generateRandomSample function.                         %
-%                                                                         %
-% INPUT                                                                   %
-%   dataDir ...... Directory with data                                    %
-%   generator .... Matrix generator function handle                       %
-%   matrixSize ... Size of the matrices that are generated                %
-%   opts ......... The option struct                                      %
-% ----------------------------------------------------------------------- %
-function b = checkParametersFile(dataDir, generator, matrixSize, opts)
-    
-    % Load the file
-    f = load([dataDir, 'parameters.mat']);
-    
-    b = true;
-    
-    % Check dataPrecision
-    if f.dataPrecision ~= opts.dataPrecision
-        fprintf('dataPrecision option does not match\n');
-        b = false;
-    end
-    
-    % Check filenamePrefix
-    if ~strcmp(f.filenamePrefix, opts.filenamePrefix)
-        fprintf('filenamePrefix option does not match\n');
-        b = false;
-    end
-    
-    % Check ignoreRealData
-    if f.ignoreRealData ~= opts.ignoreRealData
-        fprintf('ignoreRealData option does not match\n');
-        b = false;
-    end
-    
-    % Check ignoreRealTol
-    if f.ignoreRealTol ~= opts.ignoreRealTol
-        fprintf('ignoreRealTol option does not match\n');
-        b = false;
-    end
-    
-    % Check matricesPerFile
-    if f.matricesPerFile ~= opts.matricesPerFile
-        fprintf('matricesPerFile option does not match\n');
-        b = false;
-    end
-    
-    % Check storeDataWithSymmetry
-    if f.storeDataWithSymmetry ~= opts.storeDataWithSymmetry
-        fprintf('storeDataWithSymmetry option does not match\n');
-        b = false;
-    end
-    
-    % Check matrixSize
-    if f.matrixSize ~= matrixSize
-        fprintf('matrixSize does not match\n');
-        b = false;
-    end
-    
-    % Check generator
-    if ~strcmp(func2str(f.generator), func2str(generator))
-        fprintf('generator does not match\n');
-        b = false;
     end
     
 end

@@ -1,7 +1,7 @@
 % ----------------------------------------------------------------------- %
 % AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Nov. 7/2016                                                 %
+% UPDATED ... Feb. 19/2018                                                %
 %                                                                         %
 % This function will read all .mat files created by the                   %
 % generateRandomSample function and create a histogram in the complex     %
@@ -79,9 +79,6 @@
 %                                  one eigenvalue                         %
 %                 outsideCount ... Number of points outside the margin    %
 %                                                                         %
-% TO DO                                                                   %
-%   - Add parameters file                                                 %
-%                                                                         %
 % LICENSE                                                                 %
 %   This program is free software: you can redistribute it and/or modify  %
 %   it under the terms of the GNU General Public License as published by  %
@@ -156,7 +153,7 @@ function [outputFilename, stats] = processData(workingDirIn, options)
     if strcmp(opts.outputFileType, 'txt')
         dlmwrite([processedDataDir, outputFilename], mesh, 'delimiter',' ','precision',15);
     elseif strcmp(opts.outputFileType, 'mat')
-        save([processedDataDir, outputFilename], 'mesh', 'stats');
+        save([processedDataDir, outputFilename], 'mesh', 'stats', '-v7.3');
     end
     
     toc
@@ -246,47 +243,51 @@ function [totalMesh, stats] = process_density(dataDir, opts)
         end
         
         % Remove points not in margin
-        valid = isInMargin(real(z), imag(z), margin)
+        valid = isInMargin(real(z), imag(z), margin);
         z = z(valid);
         
-        % Update weights
-        if hasWeights
-            weights = weights(valid);
-        end
-        
-        % tolerance for ignoreReal option
-        tol = opts.ignoreRealTol;
-        
-        % Ignore real points if ignoreReal option is true
-        if opts.ignoreReal
-            valid = abs(imag(z)) > tol
-            z = z(valid);
+        % If there are valid points
+        if length(z) ~= 0
             
             % Update weights
             if hasWeights
                 weights = weights(valid);
             end
-        end
-        
-        xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
-        yVal = uint32(ceil((imag(z) - margin.bottom)/pointHeight));
-        
-        idx = uint32(((xVal - 1)*resolution.height + yVal));
-        
-        if hasWeights
-            for j=1:length(weights)
-                localMesh(idx(j)) = localMesh(idx(j)) + uint64(weights(j));
+            
+            % tolerance for ignoreReal option
+            tol = opts.ignoreRealTol;
+            
+            % Ignore real points if ignoreReal option is true
+            if opts.ignoreReal
+                valid = abs(imag(z)) > tol
+                z = z(valid);
+                
+                % Update weights
+                if hasWeights
+                    weights = weights(valid);
+                end
             end
-        else
-            % Count the occurences of each unique value
-            y = sort(idx);
-            p = find([true; diff(y)~=0; true]);
-            values = y(p(1:end-1));
-            instances = diff(p);
-            localMesh(values) = uint64(instances);
+            
+            xVal = uint32(ceil((real(z) - margin.left)/pointWidth));
+            yVal = uint32(ceil((imag(z) - margin.bottom)/pointHeight));
+            
+            idx = uint32(((xVal - 1)*resolution.height + yVal));
+            
+            if hasWeights
+                for j=1:length(weights)
+                    localMesh(idx(j)) = localMesh(idx(j)) + uint64(weights(j));
+                end
+            else
+                % Count the occurences of each unique value
+                y = sort(idx);
+                p = find([true; diff(y)~=0; true]);
+                values = y(p(1:end-1));
+                instances = diff(p);
+                localMesh(values) = uint64(instances);
+            end
+            
+            totalMesh = totalMesh + localMesh;
         end
-        
-        totalMesh = totalMesh + localMesh;
         
     end
     
