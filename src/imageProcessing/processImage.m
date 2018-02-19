@@ -84,6 +84,11 @@ function outputImageFilename = processImage(workingDirIn, processedDataFilename,
         error('Colormap and weight vector must be of same length');
     end
     
+    % Check that the values in cmap are in [0, 1]
+    if max(cmap(:)) > 1 || min(cmap(:)) < 0
+        error('Color map must have values in [0, 1]');
+    end
+    
     % Process the options
     opts = processOptions(options);
     
