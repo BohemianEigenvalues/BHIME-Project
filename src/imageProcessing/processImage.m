@@ -122,7 +122,7 @@ function outputImageFilename = processImage(workingDirIn, processedDataFilename,
     
     % Make the name for the output file
     outputImageFilename = makeOutputImageFilename(imagesDir);
-    fprintf('Image will be writted to: %s\n', outputImageFilename);
+    fprintf('Image will be written to: %s\n', outputImageFilename);
     
     % ------------------------
     
