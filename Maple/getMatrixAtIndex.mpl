@@ -14,7 +14,7 @@
 # OUTPUT                                                                  #
 #   An nxn matrix with entries in S.                                      #
 # ----------------------------------------------------------------------- #
-getMatrixAtIndex := proc(i, n::posint, S::list, $)::Matrix;
+getMatrixAtIndex := proc(i, n::posint, S::{set, list}, $)::Matrix;
 
     local matList, c;
 
