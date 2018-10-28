@@ -12,10 +12,10 @@
 %                             to be plotted                               %
 %   workingDir .............. (str) The directory where files should be   %
 %                             written                                     %
-%   T ....................... A m x 3 matrix where each row represents    %
-%                             RGB values                                  %
-%   x ....................... Weights for the color map (vector of m      %
-%                             values)                                     %
+%   T ....................... (optional) A m x 3 matrix where each row    %
+%                             represents RGB values                       %
+%   x ....................... (optional) Weights for the color map        %
+%                             (vector of m values)                        %
 %                                                                         %
 % OPTIONS                                                                 %
 %   backgroundColor ............ Vector with 3 elements specifying RGB    %
@@ -70,9 +70,39 @@
 % ----------------------------------------------------------------------- %
 function outputImageFilename = processImage(processedDataFilename, workingDirIn, cmap, x, options)
     
-    narginchk(4, 5);
+    narginchk(2, 5);
     
-    if nargin < 5
+    % processImage(processedDataFilename, workingDirIn)
+    if nargin == 2
+        options = struct();
+        cmap = [  0,   0,   0;
+                  0,   0, 255;
+                  0, 255, 255;
+                  0, 255,   0;
+                255, 255,   0;
+                255,   0,   0;
+                255,   0,   0;
+                255, 255, 255;
+                255, 255, 255]/255;
+        x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
+    end
+    
+    % processImage(processedDataFilename, workingDirIn, options)
+    if nargin == 3
+        cmap = [  0,   0,   0;
+                  0,   0, 255;
+                  0, 255, 255;
+                  0, 255,   0;
+                255, 255,   0;
+                255,   0,   0;
+                255,   0,   0;
+                255, 255, 255;
+                255, 255, 255]/255;
+        x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
+    end
+    
+    % processImage(processedDataFilename, workingDirIn, cmap, x)
+    if nargin == 4
         options = struct();
     end
     
