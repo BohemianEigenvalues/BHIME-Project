@@ -23,17 +23,17 @@ margin = struct('bottom', -3.3, ...
 % names and the values are the values for the option. Some options I use
 % often are illustrated here. To see the full list of options as well as
 % their descriptions see the README.
-options = struct('numDataFiles', 5, ...
-              'matricesPerFile', 1e6, ...
-                       'margin', margin, ...
-                       'height', 2001, ...
-                   'symmetryIm', true, ...
-              'backgroundColor', [1, 1, 1]);
+opts = struct('numDataFiles', 5, ...
+           'matricesPerFile', 1e6, ...
+                    'margin', margin, ...
+                    'height', 2001, ...
+                'symmetryIm', true, ...
+           'backgroundColor', [1, 1, 1]);
 
 % A random sample of 5 million (numDataFiles*matricesPerFile) matrices will  
 % be generated and stored in 5 data files (each file will contain the 
 % eigenvalues of 1 million matrices).
-generateRandomSample(g, workingDir, options);
+generateRandomSample(g, workingDir, opts);
 
 % The grid for the densities will have a height of 2001 (pixels) and the 
 % bounds for the grid are determined by the margin. The symmetryIm option
@@ -53,7 +53,7 @@ generateRandomSample(g, workingDir, options);
 %                    of the original matrix) then by the complex conjugate 
 %                    root theorem, a-bi will also be a root (and hence an 
 %                    eigenvalue).
-pFilename = processData(workingDir, options);
+pFilename = processData(workingDir, opts);
 
 % The colormap
 T = [  0,   0,   0;
@@ -70,4 +70,4 @@ T = [  0,   0,   0;
 x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 
 % The background color of the output image will be white ([1,1,1] = white)
-processImage(workingDir, pFilename, T, x, options);
+processImage(pFilename, workingDir, T, x, opts);

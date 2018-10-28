@@ -1,17 +1,17 @@
 % ----------------------------------------------------------------------- %
-% AUTHOR .... Steven E. Thornton (Copyright (c) 2016)                     %
+% AUTHOR .... Steven E. Thornton (Copyright (c) 2018)                     %
 % EMAIL ..... sthornt7@uwo.ca                                             %
-% UPDATED ... Nov. 25/2016                                                %
+% UPDATED ... Oct. 28/2018                                                %
 %                                                                         %
 % Convert processed data into an image given a colormap. A new directory  %
 % Images will be created in the working directory if it doesn't already   %
 % exist.                                                                  %
 %                                                                         %
 % INPUT                                                                   %
-%   workingDir .............. (str) The directory where files should be   %
-%                             written                                     %
 %   processedDataFilename ... (str) Name of the file containing the data  %
 %                             to be plotted                               %
+%   workingDir .............. (str) The directory where files should be   %
+%                             written                                     %
 %   T ....................... A m x 3 matrix where each row represents    %
 %                             RGB values                                  %
 %   x ....................... Weights for the color map (vector of m      %
@@ -68,7 +68,7 @@
 %   You should have received a copy of the GNU General Public License     %
 %   along with this program.  If not, see http://www.gnu.org/licenses/.   %
 % ----------------------------------------------------------------------- %
-function outputImageFilename = processImage(workingDirIn, processedDataFilename, cmap, x, options)
+function outputImageFilename = processImage(processedDataFilename, workingDirIn, cmap, x, options)
     
     narginchk(4, 5);
     

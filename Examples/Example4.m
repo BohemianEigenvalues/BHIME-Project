@@ -38,7 +38,7 @@ opts = struct('matricesPerFile', 1e6, ...
 generateRandomSample(g, workingDir, opts);
 
 % Process the data
-fname = processData(workingDir, opts);
+pFilename = processData(workingDir, opts);
 
 % Gradient
 T = [28, 38, 137;
@@ -47,4 +47,4 @@ T = [28, 38, 137;
 x = [0.0, 0.6, 1.0];
 
 % Make an image
-processImage(workingDir, fname, T, x, opts);
+processImage(pFilename, workingDir, T, x, opts);

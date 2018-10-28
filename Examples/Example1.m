@@ -54,4 +54,4 @@ x = [0, 0.1, 0.16, 0.22, 0.28, 0.34, 0.4, 0.55, 1.0];
 % The processImage function will create the Images directory within the 
 % workingDir and save an image there. The name of the image is generated
 % automatically such that images are never overwritten.
-processImage(workingDir, pFilename, T, x);
+processImage(pFilename, workingDir, T, x);

@@ -37,7 +37,7 @@ opts = struct('numDataFiles', 10, ...
 generateRandomSample(g, workingDir, opts);
 
 % Process the data
-fname = processData(workingDir, opts);
+pFilename = processData(workingDir, opts);
 
 % Colormap
 T = [  0,   0,   0;
@@ -54,4 +54,4 @@ T = [  0,   0,   0;
 x = [0, 0.1, 0.2, 0.3,   0.4,   0.5,  0.6, 0.8, 1.0];
 
 % Make an image
-processImage(workingDir, fname, T, x);
+processImage(pFilename, workingDir, T, x, opts);
